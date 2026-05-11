@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Chamber } from '@/components/Chamber'
 import { SetupPanel } from '@/components/SetupPanel'
 import { TallyPanel } from '@/components/TallyPanel'
@@ -27,6 +27,8 @@ export default function App() {
 		useChamberStore.subscribe,
 		() => useChamberStore.getState().canRedo(),
 	)
+
+	const [compact, setCompact] = useState(false)
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
@@ -66,7 +68,7 @@ export default function App() {
 					<h1 className="text-sm font-semibold text-slate-800">ChamberCounter</h1>
 					<span className="text-xs text-slate-400">vote modelling</span>
 				</div>
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-3 print:hidden">
 					<div className="flex gap-1">
 						<button
 							type="button"
@@ -95,17 +97,35 @@ export default function App() {
 							</svg>
 						</button>
 					</div>
+					<button
+						type="button"
+						onClick={() => setCompact(c => !c)}
+						title={compact ? 'Show side panels' : 'Hide side panels for screenshots'}
+						aria-pressed={compact}
+						className={`rounded border px-2 py-0.5 text-xs ${compact ? 'border-slate-700 bg-slate-700 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+					>
+						{compact ? 'Exit compact' : 'Compact'}
+					</button>
+					<button
+						type="button"
+						onClick={() => window.print()}
+						title="Print"
+						aria-label="Print"
+						className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-50"
+					>
+						Print
+					</button>
 					<div className="text-xs text-slate-500 tabular-nums">
 						{scenario ? `${scenario.councillors.length} / ${scenario.chamberSize} seated` : '—'}
 					</div>
 				</div>
 			</header>
 			<main className="flex min-h-0 flex-1">
-				<SetupPanel />
+				{!compact && <SetupPanel />}
 				<section className="flex min-w-0 flex-1 flex-col">
 					<Chamber />
 				</section>
-				<TallyPanel />
+				{!compact && <TallyPanel />}
 			</main>
 		</div>
 	)

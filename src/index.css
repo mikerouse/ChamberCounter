@@ -16,3 +16,23 @@ body {
 	-webkit-font-smoothing: antialiased;
 	text-rendering: optimizeLegibility;
 }
+
+@media print {
+	html, body, #root {
+		height: auto;
+		background: white;
+	}
+	aside, header > div:last-child {
+		display: none !important;
+	}
+	main {
+		display: block !important;
+	}
+	main > section {
+		width: 100% !important;
+		max-width: 100% !important;
+	}
+	button {
+		display: none !important;
+	}
+}

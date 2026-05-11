@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
-import { countByVote, evaluate } from '@/domain/threshold'
+import { countByVote } from '@/domain/threshold'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { effectiveQuorum, presentCount } from '@/domain/types'
 import type { Party, VoteState } from '@/domain/types'
-import { ResultCard } from './ResultCard'
 
 type Row = {
 	party: Party
@@ -26,10 +25,8 @@ export function TallyPanel() {
 	const toggleRule = useChamberStore(s => s.toggleRule)
 	const setMayorBreaksTies = useChamberStore(s => s.setMayorBreaksTies)
 	const setSupermajorityFraction = useChamberStore(s => s.setSupermajorityFraction)
-	const setCastingVote = useChamberStore(s => s.setCastingVote)
 
 	const counts = useMemo(() => (scenario ? countByVote(scenario.councillors) : null), [scenario])
-	const results = useMemo(() => (scenario ? evaluate(scenario) : []), [scenario])
 
 	const matrix = useMemo<Row[]>(() => {
 		if (!scenario) return []
@@ -128,21 +125,6 @@ export function TallyPanel() {
 					</table>
 				</div>
 			)}
-
-			<div className="flex flex-col gap-2 border-b border-slate-200 px-4 py-3">
-				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Results</h2>
-				{results.length === 0 && (
-					<p className="text-xs italic text-slate-400">No rules enabled.</p>
-				)}
-				{results.map((r, i) => (
-					<ResultCard
-						key={`${r.rule.kind}-${i}`}
-						result={r}
-						castingVote={scenario.castingVote}
-						onCast={vote => setCastingVote(scenario.id, vote)}
-					/>
-				))}
-			</div>
 
 			<div className="px-4 py-3">
 				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rules</h2>

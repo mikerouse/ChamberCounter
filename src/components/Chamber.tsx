@@ -15,6 +15,7 @@ import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import type { Councillor, Party, VoteState } from '@/domain/types'
 import { ContextMenu, type ContextMenuTarget } from './ContextMenu'
 import { Dot } from './Dot'
+import { ResultsStrip } from './ResultsStrip'
 import { VoteZone } from './VoteZone'
 
 const VIEWBOX_W = 1000
@@ -216,6 +217,7 @@ export function Chamber() {
 						/>
 					))}
 				</div>
+				<ResultsStrip />
 			</div>
 			{menuTarget && (
 				<ContextMenu
