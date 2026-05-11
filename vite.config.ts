@@ -3,7 +3,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+	base: command === 'build' ? '/ChamberCounter/' : '/',
 	plugins: [react(), tailwindcss()],
 	resolve: {
 		alias: {
@@ -16,4 +17,4 @@ export default defineConfig({
 		setupFiles: ['./src/test/setup.ts'],
 		css: false,
 	},
-})
+}))
