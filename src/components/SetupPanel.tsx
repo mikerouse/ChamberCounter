@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { buildDisplayNames } from '@/domain/display'
 import { defaultQuorum } from '@/domain/types'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
+import { Combobox } from './Combobox'
 import { PartyRow } from './PartyRow'
 import { ScenariosSidebar } from './ScenariosSidebar'
 
@@ -175,17 +176,15 @@ export function SetupPanel() {
 			<div className="border-b border-slate-200 px-4 py-3">
 				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Mayor / Chair</h2>
 				<p className="mt-1 text-xs text-slate-500">Designated councillor takes the centre-front seat and may cast a tie-breaking vote.</p>
-				<select
-					value={mayor?.id ?? ''}
-					onChange={e => setMayor(scenario.id, e.target.value || null)}
-					disabled={councillorOptions.length === 0}
-					className="mt-2 w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm focus:border-slate-400 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
-				>
-					<option value="">— None —</option>
-					{councillorOptions.map(o => (
-						<option key={o.id} value={o.id}>{o.label}</option>
-					))}
-				</select>
+				<div className="mt-2">
+					<Combobox
+						options={councillorOptions}
+						selectedId={mayor?.id ?? null}
+						onSelect={id => setMayor(scenario.id, id)}
+						placeholder="Search councillors…"
+						disabled={councillorOptions.length === 0}
+					/>
+				</div>
 			</div>
 
 			<div className="px-4 py-3">
