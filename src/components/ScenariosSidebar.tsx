@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Reorder, useDragControls } from 'motion/react'
 import { useChamberStore } from '@/store/useChamberStore'
 import { buildShareUrl } from '@/domain/share'
 import { toast } from '@/store/toasts'
@@ -16,6 +17,7 @@ type RowProps = {
 function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onShare, onDelete }: RowProps) {
 	const [menuOpen, setMenuOpen] = useState(false)
 	const containerRef = useRef<HTMLDivElement>(null)
+	const dragControls = useDragControls()
 
 	useEffect(() => {
 		if (!menuOpen) return
@@ -29,10 +31,29 @@ function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onShare, onDe
 	}, [menuOpen])
 
 	return (
-		<div
+		<Reorder.Item
+			as="div"
+			value={scenario}
+			dragListener={false}
+			dragControls={dragControls}
 			ref={containerRef}
 			className={`group relative flex items-center rounded ${isCurrent ? 'bg-slate-100' : 'hover:bg-slate-50'}`}
 		>
+			<button
+				type="button"
+				onPointerDown={e => dragControls.start(e)}
+				aria-label={`Drag ${scenario.name} to reorder`}
+				className="cursor-grab touch-none px-1 py-1 text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+			>
+				<svg width="8" height="12" viewBox="0 0 8 12" fill="currentColor">
+					<circle cx="2" cy="2" r="1" />
+					<circle cx="2" cy="6" r="1" />
+					<circle cx="2" cy="10" r="1" />
+					<circle cx="6" cy="2" r="1" />
+					<circle cx="6" cy="6" r="1" />
+					<circle cx="6" cy="10" r="1" />
+				</svg>
+			</button>
 			<button
 				type="button"
 				onClick={onSelect}
@@ -97,20 +118,24 @@ function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onShare, onDe
 					</button>
 				</div>
 			)}
-		</div>
+		</Reorder.Item>
 	)
 }
 
 export function ScenariosSidebar() {
 	const scenarios = useChamberStore(s => s.scenarios)
+	const scenarioOrder = useChamberStore(s => s.scenarioOrder)
 	const currentId = useChamberStore(s => s.currentScenarioId)
 	const createScenario = useChamberStore(s => s.createScenario)
 	const applyUKPresets = useChamberStore(s => s.applyUKPresets)
 	const selectScenario = useChamberStore(s => s.selectScenario)
 	const duplicateScenario = useChamberStore(s => s.duplicateScenario)
 	const deleteScenario = useChamberStore(s => s.deleteScenario)
+	const reorderScenarios = useChamberStore(s => s.reorderScenarios)
 
-	const list = Object.values(scenarios).sort((a, b) => b.updatedAt - a.updatedAt)
+	const list = scenarioOrder
+		.map(id => scenarios[id])
+		.filter((s): s is Scenario => Boolean(s))
 
 	const handleNew = () => {
 		const id = createScenario('Untitled scenario', 52)
@@ -159,7 +184,13 @@ export function ScenariosSidebar() {
 					+ New
 				</button>
 			</div>
-			<div className="space-y-0.5">
+			<Reorder.Group
+				as="div"
+				axis="y"
+				values={list}
+				onReorder={(next: Scenario[]) => reorderScenarios(next.map(s => s.id))}
+				className="space-y-0.5"
+			>
 				{list.map(s => (
 					<ScenarioRow
 						key={s.id}
@@ -174,7 +205,7 @@ export function ScenariosSidebar() {
 				{list.length === 0 && (
 					<p className="py-2 text-xs italic text-slate-400">No scenarios yet.</p>
 				)}
-			</div>
+			</Reorder.Group>
 		</div>
 	)
 }

@@ -12,6 +12,7 @@ const HISTORY_LIMIT = 50
 
 export type ChamberState = {
 	scenarios: ScenarioMap
+	scenarioOrder: string[]
 	currentScenarioId: string | null
 	history: Record<string, Scenario[]>
 	redoStack: Record<string, Scenario[]>
@@ -37,7 +38,11 @@ export type ChamberState = {
 	updateParty: (id: string, partyId: string, patch: Partial<Omit<Party, 'id'>>) => void
 	removeParty: (id: string, partyId: string) => void
 	setPartyCount: (id: string, partyId: string, count: number) => void
+	reorderParties: (id: string, parties: Party[]) => void
 	applyUKPresets: (id: string) => void
+
+	// Scenarios reorder
+	reorderScenarios: (order: string[]) => void
 
 	// Councillors
 	setMayor: (id: string, councillorId: string | null) => void
@@ -130,6 +135,7 @@ export const useChamberStore = create<ChamberState>()(
 	persist(
 		(set, get) => ({
 			scenarios: {},
+			scenarioOrder: [],
 			currentScenarioId: null,
 			history: {},
 			redoStack: {},
@@ -192,6 +198,7 @@ export const useChamberStore = create<ChamberState>()(
 				const scenario = newScenario(name, chamberSize)
 				set(state => ({
 					scenarios: { ...state.scenarios, [scenario.id]: scenario },
+					scenarioOrder: [scenario.id, ...state.scenarioOrder.filter(x => x !== scenario.id)],
 					currentScenarioId: scenario.id,
 				}))
 				return scenario.id
@@ -201,10 +208,11 @@ export const useChamberStore = create<ChamberState>()(
 				set(state => {
 					const { [id]: _, ...rest } = state.scenarios
 					const wasCurrent = state.currentScenarioId === id
-					const remainingIds = Object.keys(rest)
+					const newOrder = state.scenarioOrder.filter(x => x !== id)
 					return {
 						scenarios: rest,
-						currentScenarioId: wasCurrent ? (remainingIds[0] ?? null) : state.currentScenarioId,
+						scenarioOrder: newOrder,
+						currentScenarioId: wasCurrent ? (newOrder[0] ?? null) : state.currentScenarioId,
 					}
 				})
 			},
@@ -224,11 +232,24 @@ export const useChamberStore = create<ChamberState>()(
 					createdAt: now,
 					updatedAt: now,
 				}
-				set(state => ({
-					scenarios: { ...state.scenarios, [copyId]: copy },
-					currentScenarioId: copyId,
-				}))
+				set(state => {
+					const sourceIdx = state.scenarioOrder.indexOf(id)
+					const next = [...state.scenarioOrder]
+					if (sourceIdx >= 0) next.splice(sourceIdx + 1, 0, copyId)
+					else next.unshift(copyId)
+					return {
+						scenarios: { ...state.scenarios, [copyId]: copy },
+						scenarioOrder: next,
+						currentScenarioId: copyId,
+					}
+				})
 				return copyId
+			},
+
+			reorderScenarios: order => {
+				set(state => ({
+					scenarioOrder: order.filter(id => state.scenarios[id] !== undefined),
+				}))
 			},
 
 			renameScenario: (id, name) => {
@@ -311,6 +332,17 @@ export const useChamberStore = create<ChamberState>()(
 							...s,
 							councillors: [...others, ...nextForParty],
 						})
+					}),
+				)
+			},
+
+			reorderParties: (id, parties) => {
+				set(state =>
+					withScenarioUpdateAndHistory(state, id, s => {
+						const knownIds = new Set(s.parties.map(p => p.id))
+						const filtered = parties.filter(p => knownIds.has(p.id))
+						if (filtered.length !== s.parties.length) return s
+						return reassignSeats({ ...s, parties: filtered })
 					}),
 				)
 			},
@@ -490,6 +522,7 @@ export const useChamberStore = create<ChamberState>()(
 				}
 				set(state => ({
 					scenarios: { ...state.scenarios, [newScenarioId]: imported },
+					scenarioOrder: [newScenarioId, ...state.scenarioOrder.filter(x => x !== newScenarioId)],
 					currentScenarioId: newScenarioId,
 				}))
 				return newScenarioId
@@ -501,8 +534,22 @@ export const useChamberStore = create<ChamberState>()(
 			version: 1,
 			partialize: state => ({
 				scenarios: state.scenarios,
+				scenarioOrder: state.scenarioOrder,
 				currentScenarioId: state.currentScenarioId,
 			}),
+			onRehydrateStorage: () => state => {
+				if (!state) return
+				// Migration: derive scenarioOrder from scenarios if missing/inconsistent.
+				const ids = Object.keys(state.scenarios)
+				const existingOrder = state.scenarioOrder ?? []
+				const presentInOrder = existingOrder.filter(id => state.scenarios[id])
+				const missingIds = ids.filter(id => !presentInOrder.includes(id))
+				if (missingIds.length > 0 || presentInOrder.length !== existingOrder.length) {
+					// Sort missing by updatedAt desc (closest to old behaviour).
+					missingIds.sort((a, b) => state.scenarios[b].updatedAt - state.scenarios[a].updatedAt)
+					state.scenarioOrder = [...presentInOrder, ...missingIds]
+				}
+			},
 		},
 	),
 )

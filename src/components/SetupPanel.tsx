@@ -1,11 +1,45 @@
 import { useMemo } from 'react'
+import { Reorder, useDragControls } from 'motion/react'
 import { buildDisplayNames } from '@/domain/display'
 import { defaultQuorum } from '@/domain/types'
+import type { Party } from '@/domain/types'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { Combobox } from './Combobox'
 import { CouncillorsList } from './CouncillorsList'
 import { PartyRow } from './PartyRow'
 import { ScenariosSidebar } from './ScenariosSidebar'
+
+function ReorderablePartyRow({ scenarioId, party, count, remaining }: { scenarioId: string; party: Party; count: number; remaining: number }) {
+	const controls = useDragControls()
+	return (
+		<Reorder.Item
+			as="div"
+			value={party}
+			dragListener={false}
+			dragControls={controls}
+			className="flex items-start gap-1"
+		>
+			<button
+				type="button"
+				onPointerDown={e => controls.start(e)}
+				aria-label={`Drag ${party.name} to reorder`}
+				className="mt-2 cursor-grab touch-none text-slate-300 hover:text-slate-500 active:cursor-grabbing"
+			>
+				<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
+					<circle cx="2" cy="3" r="1" />
+					<circle cx="2" cy="7" r="1" />
+					<circle cx="2" cy="11" r="1" />
+					<circle cx="8" cy="3" r="1" />
+					<circle cx="8" cy="7" r="1" />
+					<circle cx="8" cy="11" r="1" />
+				</svg>
+			</button>
+			<div className="flex-1">
+				<PartyRow scenarioId={scenarioId} party={party} count={count} remaining={remaining} />
+			</div>
+		</Reorder.Item>
+	)
+}
 
 const randomColour = () => {
 	const hue = Math.floor(Math.random() * 360)
@@ -40,6 +74,7 @@ export function SetupPanel({ onCloseMobile }: SetupPanelProps = {}) {
 	const setMayor = useChamberStore(s => s.setMayor)
 	const resetVotes = useChamberStore(s => s.resetVotes)
 	const setQuorum = useChamberStore(s => s.setQuorum)
+	const reorderParties = useChamberStore(s => s.reorderParties)
 
 	const counts = useMemo(() => {
 		if (!scenario) return new Map<string, number>()
@@ -158,9 +193,15 @@ export function SetupPanel({ onCloseMobile }: SetupPanelProps = {}) {
 						{allocated} / {scenario.chamberSize}
 					</span>
 				</div>
-				<div className="mt-2 divide-y divide-slate-100">
+				<Reorder.Group
+					as="div"
+					axis="y"
+					values={scenario.parties}
+					onReorder={(next: Party[]) => reorderParties(scenario.id, next)}
+					className="mt-2 divide-y divide-slate-100"
+				>
 					{scenario.parties.map(p => (
-						<PartyRow
+						<ReorderablePartyRow
 							key={p.id}
 							scenarioId={scenario.id}
 							party={p}
@@ -171,7 +212,7 @@ export function SetupPanel({ onCloseMobile }: SetupPanelProps = {}) {
 					{scenario.parties.length === 0 && (
 						<p className="py-3 text-xs italic text-slate-400">No parties yet. Apply UK presets or add one manually.</p>
 					)}
-				</div>
+				</Reorder.Group>
 				<div className="mt-3 flex gap-2">
 					<button
 						type="button"
