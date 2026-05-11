@@ -10,5 +10,6 @@ export const UK_PARTY_PRESETS: PartyPreset[] = [
 	{ name: 'Reform UK', colour: '#12B6CF' },
 	{ name: 'SNP', colour: '#FDF38E' },
 	{ name: 'Plaid Cymru', colour: '#005B54' },
+	{ name: 'Advance UK', colour: '#1F2D5C' },
 	{ name: 'Independent', colour: '#888888' },
 ]
