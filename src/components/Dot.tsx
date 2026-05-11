@@ -24,9 +24,9 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 
 	const style: React.CSSProperties = {
 		backgroundColor: party?.colour ?? '#94a3b8',
+		position: inHemicycle ? 'absolute' : 'relative',
 		...(inHemicycle
 			? {
-					position: 'absolute',
 					left: `${hemicycleX}%`,
 					top: `${hemicycleY}%`,
 				}
