@@ -50,6 +50,7 @@ const VOTE_BUTTONS: Array<{ vote: Exclude<VoteState, 'unassigned'>; label: strin
 
 type CouncillorRow = {
 	id: string
+	partyId: string
 	partyName: string
 	partyColour: string
 	isMayor: boolean
@@ -59,6 +60,13 @@ type CouncillorRow = {
 	notes: string
 }
 
+type PartyGroup = {
+	partyId: string
+	partyName: string
+	partyColour: string
+	rows: CouncillorRow[]
+}
+
 export function CouncillorsList() {
 	const scenario = useChamberStore(selectCurrentScenario)
 	const setVote = useChamberStore(s => s.setVote)
@@ -66,6 +74,7 @@ export function CouncillorsList() {
 	const setCouncillorNotes = useChamberStore(s => s.setCouncillorNotes)
 	const [query, setQuery] = useState('')
 	const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
+	const [collapsedParties, setCollapsedParties] = useState<Record<string, boolean>>({})
 
 	const rows = useMemo(() => {
 		if (!scenario) return [] as CouncillorRow[]
@@ -83,6 +92,7 @@ export function CouncillorsList() {
 			const placeholder = names.get(c.id) ?? c.id
 			return {
 				id: c.id,
+				partyId: c.partyId,
 				partyName: party?.name ?? 'Unassigned',
 				partyColour: party?.colour ?? '#94a3b8',
 				isMayor: c.isMayor,
@@ -106,6 +116,26 @@ export function CouncillorsList() {
 		)
 	}, [rows, query])
 
+	const groups = useMemo<PartyGroup[]>(() => {
+		const map = new Map<string, PartyGroup>()
+		for (const r of filtered) {
+			const existing = map.get(r.partyId)
+			if (existing) {
+				existing.rows.push(r)
+			} else {
+				map.set(r.partyId, {
+					partyId: r.partyId,
+					partyName: r.partyName,
+					partyColour: r.partyColour,
+					rows: [r],
+				})
+			}
+		}
+		return Array.from(map.values())
+	}, [filtered])
+
+	const filterActive = query.trim().length > 0
+
 	const applyPreset = (councillorId: string, preset: NotePreset) => {
 		if (!scenario) return
 		setCouncillorNotes(scenario.id, councillorId, preset.note)
@@ -128,10 +158,38 @@ export function CouncillorsList() {
 				className="mt-2 w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs focus:border-slate-400 focus:outline-none"
 			/>
 			<div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
-				{filtered.map(row => {
-					const isNotesOpen = expandedNotes[row.id] ?? row.notes.length > 0
+				{groups.map(group => {
+					const isCollapsed = !filterActive && (collapsedParties[group.partyId] ?? false)
 					return (
-						<div key={row.id} className="rounded border border-slate-100 bg-slate-50/50 p-2">
+						<div key={group.partyId} className="space-y-1.5">
+							<button
+								type="button"
+								onClick={() =>
+									setCollapsedParties(prev => ({ ...prev, [group.partyId]: !isCollapsed }))
+								}
+								aria-expanded={!isCollapsed}
+								className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left text-xs font-semibold text-slate-600 hover:bg-slate-100"
+							>
+								<svg
+									width="10"
+									height="10"
+									viewBox="0 0 16 16"
+									className={`shrink-0 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+									fill="currentColor"
+								>
+									<path d="M6 4l4 4-4 4V4z" />
+								</svg>
+								<span
+									className="inline-block h-2 w-2 shrink-0 rounded-full"
+									style={{ backgroundColor: group.partyColour }}
+								/>
+								<span className="flex-1 truncate">{group.partyName}</span>
+								<span className="tabular-nums text-slate-400">{group.rows.length}</span>
+							</button>
+							{!isCollapsed && group.rows.map(row => {
+								const isNotesOpen = expandedNotes[row.id] ?? row.notes.length > 0
+								return (
+									<div key={row.id} className="ml-3 rounded border border-slate-100 bg-slate-50/50 p-2">
 							<div className="flex items-center gap-2">
 								<span
 									className="inline-block h-2 w-2 shrink-0 rounded-full"
@@ -214,6 +272,9 @@ export function CouncillorsList() {
 									</div>
 								</div>
 							)}
+						</div>
+					)
+				})}
 						</div>
 					)
 				})}
