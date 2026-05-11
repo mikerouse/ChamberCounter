@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { countByVote, evaluate } from '@/domain/threshold'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
+import { effectiveQuorum, presentCount } from '@/domain/types'
 import type { Party, VoteState } from '@/domain/types'
 import { ResultCard } from './ResultCard'
 
@@ -60,8 +61,20 @@ export function TallyPanel() {
 			? `${superRule.numerator}/${superRule.denominator}`
 			: '2/3'
 
+	const quorum = effectiveQuorum(scenario)
+	const present = presentCount(scenario)
+	const quorate = present >= quorum
+
 	return (
 		<aside className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-l border-slate-200 bg-white">
+			{!quorate && (
+				<div className="border-b border-rose-200 bg-rose-50 px-4 py-2 text-xs">
+					<p className="font-semibold uppercase tracking-wide text-rose-700">Not quorate</p>
+					<p className="mt-0.5 text-rose-600">
+						{present} present / {quorum} required. Motions cannot lawfully be carried.
+					</p>
+				</div>
+			)}
 			<div className="border-b border-slate-200 px-4 py-3">
 				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tally</h2>
 				<div className="mt-2 grid grid-cols-2 gap-2">

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { buildDisplayNames } from '@/domain/display'
+import { defaultQuorum } from '@/domain/types'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { PartyRow } from './PartyRow'
 import { ScenariosSidebar } from './ScenariosSidebar'
@@ -32,6 +33,7 @@ export function SetupPanel() {
 	const applyUKPresets = useChamberStore(s => s.applyUKPresets)
 	const setMayor = useChamberStore(s => s.setMayor)
 	const resetVotes = useChamberStore(s => s.resetVotes)
+	const setQuorum = useChamberStore(s => s.setQuorum)
 
 	const counts = useMemo(() => {
 		if (!scenario) return new Map<string, number>()
@@ -95,6 +97,31 @@ export function SetupPanel() {
 						onChange={e => setChamberSize(scenario.id, Number(e.target.value))}
 						className="mt-1 w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm tabular-nums focus:border-slate-400 focus:outline-none"
 					/>
+				</label>
+				<label className="mt-3 block">
+					<span className="flex items-baseline justify-between text-xs font-medium text-slate-600">
+						<span>Quorum</span>
+						{scenario.quorum !== undefined && (
+							<button
+								type="button"
+								onClick={() => setQuorum(scenario.id, null)}
+								className="text-[10px] font-normal text-slate-400 underline-offset-2 hover:underline"
+							>
+								reset to default
+							</button>
+						)}
+					</span>
+					<input
+						type="number"
+						min={1}
+						max={scenario.chamberSize}
+						value={scenario.quorum ?? defaultQuorum(scenario.chamberSize)}
+						onChange={e => setQuorum(scenario.id, Number(e.target.value))}
+						className="mt-1 w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm tabular-nums focus:border-slate-400 focus:outline-none"
+					/>
+					<span className="mt-1 block text-[10px] text-slate-400">
+						Default: {defaultQuorum(scenario.chamberSize)} (one quarter of {scenario.chamberSize})
+					</span>
 				</label>
 			</div>
 

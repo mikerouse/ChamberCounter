@@ -54,6 +54,9 @@ export type ChamberState = {
 	// Casting vote (Mayor's separate tie-breaker)
 	setCastingVote: (id: string, vote: CastingVote | null) => void
 
+	// Quorum (override of the chamber-size-based default)
+	setQuorum: (id: string, value: number | null) => void
+
 	// Import a shared scenario from a URL payload
 	importSharedScenario: (payload: SharePayload) => string
 }
@@ -432,6 +435,20 @@ export const useChamberStore = create<ChamberState>()(
 							return rest
 						}
 						return { ...s, castingVote: vote }
+					}),
+				)
+			},
+
+			setQuorum: (id, value) => {
+				set(state =>
+					withScenarioUpdate(state, id, s => {
+						if (value === null || Number.isNaN(value)) {
+							const { quorum: _drop, ...rest } = s
+							void _drop
+							return rest
+						}
+						const clamped = Math.max(1, Math.min(s.chamberSize, Math.round(value)))
+						return { ...s, quorum: clamped }
 					}),
 				)
 			},

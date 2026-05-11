@@ -32,8 +32,22 @@ export type Scenario = {
 	councillors: Councillor[]
 	enabledRules: ThresholdRule[]
 	castingVote?: CastingVote
+	quorum?: number
 	createdAt: number
 	updatedAt: number
+}
+
+/** UK Local Government Act 1972 sch 12 para 39: quorum is one quarter of the whole council. */
+export function defaultQuorum(chamberSize: number): number {
+	return Math.max(3, Math.ceil(chamberSize / 4))
+}
+
+export function effectiveQuorum(scenario: Scenario): number {
+	return scenario.quorum ?? defaultQuorum(scenario.chamberSize)
+}
+
+export function presentCount(scenario: Scenario): number {
+	return scenario.councillors.filter(c => c.vote !== 'absent').length
 }
 
 export type RuleOutcome =
