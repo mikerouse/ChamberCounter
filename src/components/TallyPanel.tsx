@@ -24,6 +24,7 @@ export function TallyPanel() {
 	const scenario = useChamberStore(selectCurrentScenario)
 	const toggleRule = useChamberStore(s => s.toggleRule)
 	const setMayorBreaksTies = useChamberStore(s => s.setMayorBreaksTies)
+	const setVote = useChamberStore(s => s.setVote)
 
 	const counts = useMemo(() => (scenario ? countByVote(scenario.councillors) : null), [scenario])
 	const results = useMemo(() => (scenario ? evaluate(scenario) : []), [scenario])
@@ -113,9 +114,19 @@ export function TallyPanel() {
 				{results.length === 0 && (
 					<p className="text-xs italic text-slate-400">No rules enabled.</p>
 				)}
-				{results.map((r, i) => (
-					<ResultCard key={`${r.rule.kind}-${i}`} result={r} />
-				))}
+				{results.map((r, i) => {
+					const mayor = scenario.councillors.find(c => c.isMayor)
+					const onCast = mayor
+						? (vote: 'aye' | 'no') => setVote(scenario.id, mayor.id, vote)
+						: undefined
+					return (
+						<ResultCard
+							key={`${r.rule.kind}-${i}`}
+							result={r}
+							onCast={onCast}
+						/>
+					)
+				})}
 			</div>
 
 			<div className="px-4 py-3">

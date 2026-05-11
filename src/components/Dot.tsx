@@ -61,10 +61,28 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 			{...attributes}
 		>
 			{councillor.isMayor && (
-				<span
-					aria-hidden
-					className="pointer-events-none absolute -inset-[3px] rounded-full border-[2.5px] border-amber-400"
-				/>
+				<>
+					<span
+						aria-hidden
+						className="pointer-events-none absolute -inset-[3px] rounded-full border-[2.5px] border-amber-400"
+					/>
+					<svg
+						aria-hidden
+						viewBox="0 0 14 8"
+						className="pointer-events-none absolute -top-[8px] left-1/2 h-[8px] w-[14px] -translate-x-1/2 drop-shadow-sm"
+					>
+						<path
+							d="M0 8 L0 4.5 L2 1 L4.5 5 L7 0 L9.5 5 L12 1 L14 4.5 L14 8 Z"
+							fill="#fbbf24"
+							stroke="#92400e"
+							strokeWidth="0.5"
+							strokeLinejoin="round"
+						/>
+						<circle cx="2" cy="1" r="0.9" fill="#92400e" />
+						<circle cx="7" cy="0.2" r="1" fill="#dc2626" />
+						<circle cx="12" cy="1" r="0.9" fill="#92400e" />
+					</svg>
+				</>
 			)}
 		</div>
 	)

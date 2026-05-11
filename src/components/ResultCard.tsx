@@ -1,5 +1,7 @@
 import type { RuleResult } from '@/domain/types'
 
+type CastVote = 'aye' | 'no'
+
 const OUTCOME_STYLE: Record<RuleResult['outcome'], { badge: string; bg: string; text: string; dot: string }> = {
 	pass: {
 		badge: 'PASSES',
@@ -44,10 +46,20 @@ const RULE_LABEL: Record<RuleResult['rule']['kind'], string> = {
 	'whole-chamber-majority': 'Whole-chamber majority',
 }
 
-export function ResultCard({ result }: { result: RuleResult }) {
+type Props = {
+	result: RuleResult
+	onCast?: (vote: CastVote) => void
+}
+
+export function ResultCard({ result, onCast }: Props) {
 	const style = OUTCOME_STYLE[result.outcome]
 	const label = RULE_LABEL[result.rule.kind]
 	const isSimpleWithCasting = result.rule.kind === 'simple-majority' && result.rule.mayorBreaksTies
+
+	const tieAwaitingCasting =
+		(result.outcome === 'tie' || result.outcome === 'pending-mayor') &&
+		result.mayorVote !== undefined &&
+		isSimpleWithCasting
 
 	return (
 		<div className={`rounded-lg border ${style.bg} p-3`}>
@@ -64,6 +76,24 @@ export function ResultCard({ result }: { result: RuleResult }) {
 				</span>
 			</div>
 			<p className="mt-1.5 text-xs leading-snug text-slate-600">{result.explanation}</p>
+			{tieAwaitingCasting && onCast && (
+				<div className="mt-2 grid grid-cols-2 gap-2">
+					<button
+						type="button"
+						onClick={() => onCast('aye')}
+						className="rounded bg-emerald-500 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
+					>
+						Cast Aye
+					</button>
+					<button
+						type="button"
+						onClick={() => onCast('no')}
+						className="rounded bg-rose-500 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-700"
+					>
+						Cast No
+					</button>
+				</div>
+			)}
 		</div>
 	)
 }
