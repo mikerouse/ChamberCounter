@@ -142,7 +142,7 @@ export function Chamber() {
 
 	return (
 		<DndContext sensors={sensors} onDragEnd={onDragEnd} accessibility={{ announcements }}>
-			<div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-4 p-4">
+			<div className="mx-auto flex w-full max-w-[1100px] flex-col gap-4 p-3 sm:p-4 lg:h-full">
 				<HemicycleDropTarget>
 					<svg
 						viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
@@ -207,7 +207,7 @@ export function Chamber() {
 					)}
 				</HemicycleDropTarget>
 
-				<div className="grid h-44 shrink-0 grid-cols-2 gap-3 sm:grid-cols-4">
+				<div className="grid grid-cols-2 gap-3 sm:h-44 sm:shrink-0 sm:grid-cols-4">
 					{VOTE_ORDER.map(vote => (
 						<VoteZone
 							key={vote}
@@ -219,7 +219,9 @@ export function Chamber() {
 						/>
 					))}
 				</div>
-				<ResultsStrip />
+				<div className="sticky bottom-0 -mx-3 mt-2 border-t border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur sm:-mx-4 sm:px-4 lg:static lg:mx-0 lg:mt-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+					<ResultsStrip />
+				</div>
 			</div>
 			{menuTarget && (
 				<ContextMenu

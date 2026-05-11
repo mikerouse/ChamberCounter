@@ -201,7 +201,7 @@ export default function App() {
 				>
 					<SetupPanel onCloseMobile={() => setDrawer(null)} />
 				</div>
-				<section ref={captureRef} className="flex min-w-0 flex-1 flex-col bg-slate-50">
+				<section ref={captureRef} className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-slate-50">
 					<Chamber />
 				</section>
 				<div

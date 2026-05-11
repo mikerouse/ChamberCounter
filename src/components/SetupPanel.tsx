@@ -3,6 +3,7 @@ import { buildDisplayNames } from '@/domain/display'
 import { defaultQuorum } from '@/domain/types'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { Combobox } from './Combobox'
+import { CouncillorsList } from './CouncillorsList'
 import { PartyRow } from './PartyRow'
 import { ScenariosSidebar } from './ScenariosSidebar'
 
@@ -202,6 +203,8 @@ export function SetupPanel({ onCloseMobile }: SetupPanelProps = {}) {
 					/>
 				</div>
 			</div>
+
+			<CouncillorsList />
 
 			<div className="px-4 py-3">
 				<button
