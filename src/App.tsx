@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { toPng } from 'html-to-image'
 import { Chamber } from '@/components/Chamber'
+import { MobileTallyPill } from '@/components/MobileTallyPill'
 import { SetupPanel } from '@/components/SetupPanel'
 import { TallyPanel } from '@/components/TallyPanel'
 import { Toasts } from '@/components/Toasts'
@@ -213,6 +214,7 @@ export default function App() {
 					<SetupPanel onCloseMobile={() => setDrawer(null)} />
 				</div>
 				<section ref={captureRef} className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-slate-50">
+					<MobileTallyPill />
 					<Chamber />
 				</section>
 				<div
