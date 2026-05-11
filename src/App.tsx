@@ -5,6 +5,7 @@ import { SetupPanel } from '@/components/SetupPanel'
 import { TallyPanel } from '@/components/TallyPanel'
 import { Toasts } from '@/components/Toasts'
 import { clearShareHash, readSharedScenarioFromHash } from '@/domain/share'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { ensureSeedScenario, selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { toast } from '@/store/toasts'
 
@@ -35,6 +36,8 @@ export default function App() {
 	const [exporting, setExporting] = useState(false)
 	const [drawer, setDrawer] = useState<'left' | 'right' | null>(null)
 	const captureRef = useRef<HTMLElement>(null)
+	const leftDrawerRef = useFocusTrap<HTMLDivElement>(drawer === 'left')
+	const rightDrawerRef = useFocusTrap<HTMLDivElement>(drawer === 'right')
 
 	useEffect(() => {
 		if (!drawer) return
@@ -199,6 +202,10 @@ export default function App() {
 					/>
 				)}
 				<div
+					ref={leftDrawerRef}
+					role={drawer === 'left' ? 'dialog' : undefined}
+					aria-modal={drawer === 'left' ? true : undefined}
+					aria-label={drawer === 'left' ? 'Setup panel' : undefined}
 					className={`fixed inset-y-12 left-0 z-30 transform transition-transform duration-200 ease-out lg:static lg:inset-auto lg:translate-x-0 ${
 						drawer === 'left' ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
 					} ${compact ? 'lg:hidden' : ''}`}
@@ -209,6 +216,10 @@ export default function App() {
 					<Chamber />
 				</section>
 				<div
+					ref={rightDrawerRef}
+					role={drawer === 'right' ? 'dialog' : undefined}
+					aria-modal={drawer === 'right' ? true : undefined}
+					aria-label={drawer === 'right' ? 'Tally panel' : undefined}
 					className={`fixed inset-y-12 right-0 z-30 transform transition-transform duration-200 ease-out lg:static lg:inset-auto lg:translate-x-0 ${
 						drawer === 'right' ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
 					} ${compact ? 'lg:hidden' : ''}`}

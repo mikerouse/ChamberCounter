@@ -81,7 +81,11 @@ export function TallyPanel({ onCloseMobile }: TallyPanelProps = {}) {
 				</button>
 			)}
 			{!quorate && (
-				<div className="border-b border-rose-200 bg-rose-50 px-4 py-2 text-xs">
+				<div
+					role="alert"
+					aria-live="polite"
+					className="border-b border-rose-200 bg-rose-50 px-4 py-2 text-xs"
+				>
 					<p className="font-semibold uppercase tracking-wide text-rose-700">Not quorate</p>
 					<p className="mt-0.5 text-rose-600">
 						{present} present / {quorum} required. Motions cannot lawfully be carried.
