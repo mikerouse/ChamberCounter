@@ -230,6 +230,33 @@ export function Chamber() {
 						)
 					})}
 
+					<AnimatePresence>
+						{scenario.councillors
+							.filter(c => c.vote !== 'unassigned')
+							.map(c => {
+								const seat = layout.seats[c.seatIndex]
+								if (!seat) return null
+								const party = partyById.get(c.partyId)
+								return (
+									<motion.div
+										key={`ghost-${c.id}`}
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 0.22 }}
+										exit={{ opacity: 0 }}
+										transition={{ duration: 0.18 }}
+										aria-hidden
+										className="pointer-events-none absolute h-[22px] w-[22px] rounded-full border-2 border-white"
+										style={{
+											left: `${(seat.x / VIEWBOX_W) * 100}%`,
+											top: `${(seat.y / VIEWBOX_H) * 100}%`,
+											transform: 'translate(-50%, -50%)',
+											backgroundColor: party?.colour ?? '#94a3b8',
+										}}
+									/>
+								)
+							})}
+					</AnimatePresence>
+
 					{scenario.councillors.length === 0 && (
 						<div className="absolute inset-0 flex items-center justify-center text-sm italic text-slate-400">
 							Add parties and councillors in the sidebar to populate the chamber.

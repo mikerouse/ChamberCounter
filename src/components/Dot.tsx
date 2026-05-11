@@ -51,6 +51,12 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 		onContextMenu(councillor.id, e.clientX, e.clientY)
 	}
 
+	const handleClick: React.MouseEventHandler<HTMLDivElement> = e => {
+		if (!onContextMenu || isDragging) return
+		e.stopPropagation()
+		onContextMenu(councillor.id, e.clientX, e.clientY)
+	}
+
 	return (
 		<motion.div
 			ref={setNodeRef}
@@ -62,6 +68,7 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 			title={label}
 			aria-label={label}
 			onContextMenu={handleContextMenu}
+			onClick={handleClick}
 			{...listeners}
 			{...attributes}
 		>
