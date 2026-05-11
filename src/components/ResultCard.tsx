@@ -33,11 +33,11 @@ const OUTCOME_STYLE: Record<RuleResult['outcome'], { badge: string; bg: string; 
 		text: 'text-rose-700',
 		dot: 'bg-rose-500',
 	},
-	'pending-mayor': {
-		badge: 'PENDING',
-		bg: 'bg-slate-50 border-slate-200',
-		text: 'text-slate-600',
-		dot: 'bg-slate-500',
+	'pending-casting': {
+		badge: 'AWAITING CAST',
+		bg: 'bg-amber-50 border-amber-300',
+		text: 'text-amber-800',
+		dot: 'bg-amber-500',
 	},
 }
 
@@ -48,18 +48,21 @@ const RULE_LABEL: Record<RuleResult['rule']['kind'], string> = {
 
 type Props = {
 	result: RuleResult
-	onCast?: (vote: CastVote) => void
+	castingVote?: CastVote
+	onCast?: (vote: CastVote | null) => void
 }
 
-export function ResultCard({ result, onCast }: Props) {
+export function ResultCard({ result, castingVote, onCast }: Props) {
 	const style = OUTCOME_STYLE[result.outcome]
 	const label = RULE_LABEL[result.rule.kind]
 	const isSimpleWithCasting = result.rule.kind === 'simple-majority' && result.rule.mayorBreaksTies
 
-	const tieAwaitingCasting =
-		(result.outcome === 'tie' || result.outcome === 'pending-mayor') &&
-		result.mayorVote !== undefined &&
-		isSimpleWithCasting
+	const showCastingControls =
+		isSimpleWithCasting &&
+		onCast &&
+		(result.outcome === 'pending-casting' ||
+			result.outcome === 'pass-by-casting' ||
+			result.outcome === 'fail-by-casting')
 
 	return (
 		<div className={`rounded-lg border ${style.bg} p-3`}>
@@ -76,22 +79,43 @@ export function ResultCard({ result, onCast }: Props) {
 				</span>
 			</div>
 			<p className="mt-1.5 text-xs leading-snug text-slate-600">{result.explanation}</p>
-			{tieAwaitingCasting && onCast && (
-				<div className="mt-2 grid grid-cols-2 gap-2">
-					<button
-						type="button"
-						onClick={() => onCast('aye')}
-						className="rounded bg-emerald-500 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"
-					>
-						Cast Aye
-					</button>
-					<button
-						type="button"
-						onClick={() => onCast('no')}
-						className="rounded bg-rose-500 px-2 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-700"
-					>
-						Cast No
-					</button>
+			{showCastingControls && (
+				<div className="mt-2 space-y-1.5">
+					<div className="grid grid-cols-2 gap-2">
+						<button
+							type="button"
+							onClick={() => onCast('aye')}
+							aria-pressed={castingVote === 'aye'}
+							className={`rounded px-2 py-1.5 text-xs font-semibold shadow-sm focus:outline-none focus-visible:ring-2 ${
+								castingVote === 'aye'
+									? 'bg-emerald-600 text-white ring-2 ring-emerald-700'
+									: 'bg-emerald-500 text-white hover:bg-emerald-600 focus-visible:ring-emerald-700'
+							}`}
+						>
+							{castingVote === 'aye' ? '✓ Cast Aye' : 'Cast Aye'}
+						</button>
+						<button
+							type="button"
+							onClick={() => onCast('no')}
+							aria-pressed={castingVote === 'no'}
+							className={`rounded px-2 py-1.5 text-xs font-semibold shadow-sm focus:outline-none focus-visible:ring-2 ${
+								castingVote === 'no'
+									? 'bg-rose-600 text-white ring-2 ring-rose-700'
+									: 'bg-rose-500 text-white hover:bg-rose-600 focus-visible:ring-rose-700'
+							}`}
+						>
+							{castingVote === 'no' ? '✓ Cast No' : 'Cast No'}
+						</button>
+					</div>
+					{castingVote && (
+						<button
+							type="button"
+							onClick={() => onCast(null)}
+							className="w-full text-[11px] text-slate-500 underline-offset-2 hover:underline"
+						>
+							Clear casting vote
+						</button>
+					)}
 				</div>
 			)}
 		</div>

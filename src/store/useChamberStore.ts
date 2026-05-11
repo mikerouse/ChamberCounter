@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { layoutHemicycle } from '@/domain/hemicycle'
 import { newCouncillor, newId, newParty, newScenario } from '@/domain/factory'
 import { UK_PARTY_PRESETS } from '@/domain/presets'
-import type { Councillor, Party, Scenario, VoteState } from '@/domain/types'
+import type { CastingVote, Councillor, Party, Scenario, VoteState } from '@/domain/types'
 
 type ScenarioMap = Record<string, Scenario>
 
@@ -38,6 +38,9 @@ export type ChamberState = {
 	// Rules
 	toggleRule: (id: string, kind: 'simple-majority' | 'whole-chamber-majority') => void
 	setMayorBreaksTies: (id: string, on: boolean) => void
+
+	// Casting vote (Mayor's separate tie-breaker)
+	setCastingVote: (id: string, vote: CastingVote | null) => void
 }
 
 function touch(scenario: Scenario): Scenario {
@@ -239,7 +242,9 @@ export const useChamberStore = create<ChamberState>()(
 							...c,
 							isMayor: councillorId !== null && c.id === councillorId,
 						}))
-						return reassignSeats({ ...s, councillors: next })
+						const { castingVote: _drop, ...rest } = s
+						void _drop
+						return reassignSeats({ ...rest, councillors: next })
 					}),
 				)
 			},
@@ -312,6 +317,19 @@ export const useChamberStore = create<ChamberState>()(
 							r.kind === 'simple-majority' ? { ...r, mayorBreaksTies: on } : r,
 						),
 					})),
+				)
+			},
+
+			setCastingVote: (id, vote) => {
+				set(state =>
+					withScenarioUpdate(state, id, s => {
+						if (vote === null) {
+							const { castingVote: _drop, ...rest } = s
+							void _drop
+							return rest
+						}
+						return { ...s, castingVote: vote }
+					}),
 				)
 			},
 		}),

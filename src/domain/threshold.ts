@@ -30,7 +30,7 @@ export function evaluateRule(rule: ThresholdRule, scenario: Scenario): RuleResul
 		if (counts.no > counts.aye) {
 			return { ...base, outcome: 'fail', explanation: `Noes ${counts.no} beat Ayes ${counts.aye}.` }
 		}
-		// tie
+		// tied (ayes == noes)
 		if (!rule.mayorBreaksTies) {
 			return { ...base, outcome: 'tie', explanation: `Tied ${counts.aye}–${counts.no}. No casting vote configured.` }
 		}
@@ -38,20 +38,27 @@ export function evaluateRule(rule: ThresholdRule, scenario: Scenario): RuleResul
 		if (!mayor) {
 			return { ...base, outcome: 'tie', explanation: `Tied ${counts.aye}–${counts.no}. No Mayor designated to cast a vote.` }
 		}
-		if (mayor.vote === 'unassigned') {
-			return { ...base, outcome: 'pending-mayor', mayorVote: 'unassigned', explanation: `Tied ${counts.aye}–${counts.no}. Mayor has not yet voted.` }
+		// Mayor + casting-on-tie rule: an explicit second vote is required.
+		if (scenario.castingVote === 'aye') {
+			return {
+				...base,
+				outcome: 'pass-by-casting',
+				mayorVote: 'aye',
+				explanation: `Tied ${counts.aye}–${counts.no}. Mayor's casting vote: AYE → passes ${counts.aye + 1}–${counts.no}.`,
+			}
 		}
-		if (mayor.vote === 'aye') {
-			return { ...base, outcome: 'pass-by-casting', mayorVote: 'aye', explanation: `Tied ${counts.aye}–${counts.no}. Mayor casts AYE → passes.` }
-		}
-		if (mayor.vote === 'no') {
-			return { ...base, outcome: 'fail-by-casting', mayorVote: 'no', explanation: `Tied ${counts.aye}–${counts.no}. Mayor casts NO → fails.` }
+		if (scenario.castingVote === 'no') {
+			return {
+				...base,
+				outcome: 'fail-by-casting',
+				mayorVote: 'no',
+				explanation: `Tied ${counts.aye}–${counts.no}. Mayor's casting vote: NO → fails ${counts.aye}–${counts.no + 1}.`,
+			}
 		}
 		return {
 			...base,
-			outcome: 'tie',
-			mayorVote: mayor.vote,
-			explanation: `Tied ${counts.aye}–${counts.no}. Mayor is ${mayor.vote} and cannot break the tie.`,
+			outcome: 'pending-casting',
+			explanation: `Tied ${counts.aye}–${counts.no}. Mayor's casting vote required to break the tie.`,
 		}
 	}
 

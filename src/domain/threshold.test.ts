@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { countByVote, evaluate, evaluateRule } from './threshold'
-import type { Councillor, Scenario, ThresholdRule, VoteState } from './types'
+import type { CastingVote, Councillor, Scenario, ThresholdRule, VoteState } from './types'
 
 function makeCouncillors(votes: VoteState[], mayorIndex = -1): Councillor[] {
 	return votes.map((v, i) => ({
@@ -12,7 +12,12 @@ function makeCouncillors(votes: VoteState[], mayorIndex = -1): Councillor[] {
 	}))
 }
 
-function makeScenario(councillors: Councillor[], rules: ThresholdRule[], chamberSize?: number): Scenario {
+function makeScenario(
+	councillors: Councillor[],
+	rules: ThresholdRule[],
+	chamberSize?: number,
+	castingVote?: CastingVote,
+): Scenario {
 	return {
 		id: 's',
 		name: 't',
@@ -20,6 +25,7 @@ function makeScenario(councillors: Councillor[], rules: ThresholdRule[], chamber
 		parties: [{ id: 'p', name: 'P', colour: '#000' }],
 		councillors,
 		enabledRules: rules,
+		castingVote,
 		createdAt: 0,
 		updatedAt: 0,
 	}
@@ -63,43 +69,66 @@ describe('evaluateRule: simple-majority', () => {
 describe('evaluateRule: simple-majority with Mayor casting vote', () => {
 	const rule: ThresholdRule = { kind: 'simple-majority', mayorBreaksTies: true }
 
-	it('Mayor breaks tie in favour of AYE', () => {
-		const s = makeScenario(makeCouncillors(['aye', 'no'], 0), [rule])
+	it('returns pending-casting on tie when Mayor exists but no casting vote set, regardless of Mayor’s own vote', () => {
+		// Mayor voted Aye; non-mayor 1 aye / 2 no → with Mayor: 2–2
+		const mayorAye = makeScenario(makeCouncillors(['aye', 'no', 'no', 'aye'], 3), [rule])
+		expect(evaluateRule(rule, mayorAye).outcome).toBe('pending-casting')
+
+		// Mayor voted No; non-mayor 2 aye / 1 no → with Mayor: 2–2
+		const mayorNo = makeScenario(makeCouncillors(['aye', 'aye', 'no', 'no'], 3), [rule])
+		expect(evaluateRule(rule, mayorNo).outcome).toBe('pending-casting')
+
+		// Mayor abstain; non-mayor 2-2
+		const mayorAbstain = makeScenario(makeCouncillors(['aye', 'no', 'aye', 'no', 'abstain'], 4), [rule])
+		expect(evaluateRule(rule, mayorAbstain).outcome).toBe('pending-casting')
+
+		// Mayor absent; non-mayor 1-1
+		const mayorAbsent = makeScenario(makeCouncillors(['aye', 'no', 'absent'], 2), [rule])
+		expect(evaluateRule(rule, mayorAbsent).outcome).toBe('pending-casting')
+
+		// Mayor unassigned; non-mayor 1-1
+		const mayorUnassigned = makeScenario(makeCouncillors(['aye', 'no', 'unassigned'], 2), [rule])
+		expect(evaluateRule(rule, mayorUnassigned).outcome).toBe('pending-casting')
+	})
+
+	it('castingVote=aye breaks the tie in favour of pass', () => {
+		const s = makeScenario(makeCouncillors(['aye', 'no'], 0), [rule], undefined, 'aye')
 		const r = evaluateRule(rule, s)
 		expect(r.outcome).toBe('pass-by-casting')
 		expect(r.mayorVote).toBe('aye')
+		expect(r.explanation).toContain('AYE')
 	})
 
-	it('Mayor breaks tie in favour of NO', () => {
-		const s = makeScenario(makeCouncillors(['aye', 'no'], 1), [rule])
+	it('castingVote=no breaks the tie in favour of fail', () => {
+		const s = makeScenario(makeCouncillors(['aye', 'no'], 0), [rule], undefined, 'no')
 		const r = evaluateRule(rule, s)
 		expect(r.outcome).toBe('fail-by-casting')
 		expect(r.mayorVote).toBe('no')
+		expect(r.explanation).toContain('NO')
 	})
 
-	it('still a tie if Mayor abstained', () => {
-		const s = makeScenario(makeCouncillors(['aye', 'no', 'abstain'], 2), [rule])
+	it('Mayor can cast against their own normal vote', () => {
+		// Mayor voted Aye normally, but casts NO to defeat the motion.
+		const s = makeScenario(makeCouncillors(['aye', 'no'], 0), [rule], undefined, 'no')
+		expect(evaluateRule(rule, s).outcome).toBe('fail-by-casting')
+	})
+
+	it('castingVote is ignored when not tied', () => {
+		const s = makeScenario(makeCouncillors(['aye', 'aye', 'no'], 2), [rule], undefined, 'no')
+		const r = evaluateRule(rule, s)
+		expect(r.outcome).toBe('pass')
+		expect(r.explanation).not.toContain('Mayor')
+	})
+
+	it('no Mayor designated → plain tie (castingVote irrelevant)', () => {
+		const s = makeScenario(makeCouncillors(['aye', 'no']), [rule], undefined, 'aye')
 		expect(evaluateRule(rule, s).outcome).toBe('tie')
 	})
 
-	it('still a tie if Mayor absent', () => {
-		const s = makeScenario(makeCouncillors(['aye', 'no', 'absent'], 2), [rule])
-		expect(evaluateRule(rule, s).outcome).toBe('tie')
-	})
-
-	it('pending-mayor when tied and Mayor has not yet voted', () => {
-		const s = makeScenario(makeCouncillors(['aye', 'no', 'unassigned'], 2), [rule])
-		expect(evaluateRule(rule, s).outcome).toBe('pending-mayor')
-	})
-
-	it('no Mayor designated → tie outcome', () => {
-		const s = makeScenario(makeCouncillors(['aye', 'no']), [rule])
-		expect(evaluateRule(rule, s).outcome).toBe('tie')
-	})
-
-	it('Mayor only matters at exact tie, not when ayes lead', () => {
-		const s = makeScenario(makeCouncillors(['aye', 'aye', 'no'], 2), [rule])
-		expect(evaluateRule(rule, s).outcome).toBe('pass')
+	it('mayorBreaksTies disabled → plain tie (castingVote irrelevant)', () => {
+		const ruleOff: ThresholdRule = { kind: 'simple-majority', mayorBreaksTies: false }
+		const s = makeScenario(makeCouncillors(['aye', 'no'], 0), [ruleOff], undefined, 'aye')
+		expect(evaluateRule(ruleOff, s).outcome).toBe('tie')
 	})
 })
 

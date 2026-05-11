@@ -19,6 +19,8 @@ export type ThresholdRule =
 	| { kind: 'simple-majority'; mayorBreaksTies: boolean }
 	| { kind: 'whole-chamber-majority' }
 
+export type CastingVote = 'aye' | 'no'
+
 export type Scenario = {
 	id: string
 	name: string
@@ -26,6 +28,7 @@ export type Scenario = {
 	parties: Party[]
 	councillors: Councillor[]
 	enabledRules: ThresholdRule[]
+	castingVote?: CastingVote
 	createdAt: number
 	updatedAt: number
 }
@@ -36,7 +39,7 @@ export type RuleOutcome =
 	| 'tie'
 	| 'pass-by-casting'
 	| 'fail-by-casting'
-	| 'pending-mayor'
+	| 'pending-casting'
 
 export type RuleResult = {
 	rule: ThresholdRule
