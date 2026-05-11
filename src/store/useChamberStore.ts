@@ -44,6 +44,7 @@ export type ChamberState = {
 	setVote: (id: string, councillorId: string, vote: VoteState) => void
 	setPartyVote: (id: string, partyId: string, vote: VoteState) => void
 	renameCouncillor: (id: string, councillorId: string, name: string) => void
+	setCouncillorNotes: (id: string, councillorId: string, notes: string) => void
 	resetVotes: (id: string) => void
 
 	// Rules
@@ -370,6 +371,20 @@ export const useChamberStore = create<ChamberState>()(
 						councillors: s.councillors.map(c =>
 							c.id === councillorId
 								? { ...c, name: trimmed === '' ? undefined : trimmed }
+								: c,
+						),
+					})),
+				)
+			},
+
+			setCouncillorNotes: (id, councillorId, notes) => {
+				const trimmed = notes.trim()
+				set(state =>
+					withScenarioUpdate(state, id, s => ({
+						...s,
+						councillors: s.councillors.map(c =>
+							c.id === councillorId
+								? { ...c, notes: trimmed === '' ? undefined : trimmed }
 								: c,
 						),
 					})),

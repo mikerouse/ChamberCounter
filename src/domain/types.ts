@@ -13,6 +13,7 @@ export type Councillor = {
 	seatIndex: number
 	vote: VoteState
 	name?: string
+	notes?: string
 }
 
 export type ThresholdRule =

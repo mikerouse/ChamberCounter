@@ -3,6 +3,24 @@ import { buildDisplayNames } from '@/domain/display'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import type { VoteState } from '@/domain/types'
 
+type NotePreset = {
+	label: string
+	note: string
+	vote?: Exclude<VoteState, 'unassigned'>
+	hint: string
+}
+
+const NOTE_PRESETS: NotePreset[] = [
+	{ label: 'On leave', note: 'On leave', vote: 'absent', hint: 'Marks Absent and notes the reason' },
+	{ label: 'Sick', note: 'Sick', vote: 'absent', hint: 'Marks Absent and notes the reason' },
+	{ label: 'Paired', note: 'Paired', vote: 'abstain', hint: 'Pairing arrangement → Abstain' },
+	{ label: 'Conflict', note: 'Conflict of interest', vote: 'abstain', hint: 'Legal duty to abstain' },
+	{ label: 'Mat/Pat', note: 'Maternity / paternity leave', vote: 'absent', hint: 'Marks Absent and notes the reason' },
+	{ label: 'Free vote', note: 'Free vote', hint: 'Tags as free vote, leaves vote untouched' },
+	{ label: 'Wobbly', note: 'Wobbly', hint: 'Tags as wobbly, leaves vote untouched' },
+	{ label: 'Likely rebel', note: 'Likely rebel', hint: 'Tags as likely rebel, leaves vote untouched' },
+]
+
 const VOTE_BUTTONS: Array<{ vote: Exclude<VoteState, 'unassigned'>; label: string; activeClass: string; idleClass: string }> = [
 	{
 		vote: 'aye',
@@ -30,14 +48,27 @@ const VOTE_BUTTONS: Array<{ vote: Exclude<VoteState, 'unassigned'>; label: strin
 	},
 ]
 
+type CouncillorRow = {
+	id: string
+	partyName: string
+	partyColour: string
+	isMayor: boolean
+	vote: VoteState
+	placeholder: string
+	name: string
+	notes: string
+}
+
 export function CouncillorsList() {
 	const scenario = useChamberStore(selectCurrentScenario)
 	const setVote = useChamberStore(s => s.setVote)
 	const renameCouncillor = useChamberStore(s => s.renameCouncillor)
+	const setCouncillorNotes = useChamberStore(s => s.setCouncillorNotes)
 	const [query, setQuery] = useState('')
+	const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({})
 
 	const rows = useMemo(() => {
-		if (!scenario) return [] as Array<{ id: string; partyName: string; partyColour: string; isMayor: boolean; vote: VoteState; placeholder: string; name: string }>
+		if (!scenario) return [] as CouncillorRow[]
 		const names = buildDisplayNames(scenario.councillors, scenario.parties)
 		const partyOrder = new Map<string, number>()
 		scenario.parties.forEach((p, i) => partyOrder.set(p.id, i))
@@ -58,6 +89,7 @@ export function CouncillorsList() {
 				vote: c.vote,
 				placeholder,
 				name: c.name ?? '',
+				notes: c.notes ?? '',
 			}
 		})
 	}, [scenario])
@@ -65,8 +97,20 @@ export function CouncillorsList() {
 	const filtered = useMemo(() => {
 		const q = query.trim().toLowerCase()
 		if (!q) return rows
-		return rows.filter(r => r.partyName.toLowerCase().includes(q) || r.placeholder.toLowerCase().includes(q) || r.name.toLowerCase().includes(q))
+		return rows.filter(
+			r =>
+				r.partyName.toLowerCase().includes(q) ||
+				r.placeholder.toLowerCase().includes(q) ||
+				r.name.toLowerCase().includes(q) ||
+				r.notes.toLowerCase().includes(q),
+		)
 	}, [rows, query])
+
+	const applyPreset = (councillorId: string, preset: NotePreset) => {
+		if (!scenario) return
+		setCouncillorNotes(scenario.id, councillorId, preset.note)
+		if (preset.vote) setVote(scenario.id, councillorId, preset.vote)
+	}
 
 	if (!scenario || rows.length === 0) return null
 
@@ -84,44 +128,95 @@ export function CouncillorsList() {
 				className="mt-2 w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs focus:border-slate-400 focus:outline-none"
 			/>
 			<div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
-				{filtered.map(row => (
-					<div key={row.id} className="rounded border border-slate-100 bg-slate-50/50 p-2">
-						<div className="flex items-center gap-2">
-							<span
-								className="inline-block h-2 w-2 shrink-0 rounded-full"
-								style={{ backgroundColor: row.partyColour }}
-							/>
-							<input
-								type="text"
-								value={row.name}
-								onChange={e => renameCouncillor(scenario.id, row.id, e.target.value)}
-								placeholder={row.placeholder}
-								className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs focus:border-slate-400 focus:outline-none"
-								aria-label={`Name for ${row.placeholder}`}
-							/>
-							{row.isMayor && (
-								<span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">
-									Mayor
-								</span>
+				{filtered.map(row => {
+					const isNotesOpen = expandedNotes[row.id] ?? row.notes.length > 0
+					return (
+						<div key={row.id} className="rounded border border-slate-100 bg-slate-50/50 p-2">
+							<div className="flex items-center gap-2">
+								<span
+									className="inline-block h-2 w-2 shrink-0 rounded-full"
+									style={{ backgroundColor: row.partyColour }}
+								/>
+								<input
+									type="text"
+									value={row.name}
+									onChange={e => renameCouncillor(scenario.id, row.id, e.target.value)}
+									placeholder={row.placeholder}
+									className="min-w-0 flex-1 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs focus:border-slate-400 focus:outline-none"
+									aria-label={`Name for ${row.placeholder}`}
+								/>
+								{row.isMayor && (
+									<span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700">
+										Mayor
+									</span>
+								)}
+								<button
+									type="button"
+									onClick={() => setExpandedNotes(prev => ({ ...prev, [row.id]: !isNotesOpen }))}
+									aria-expanded={isNotesOpen}
+									aria-label={`${isNotesOpen ? 'Hide' : 'Show'} notes for ${row.placeholder}`}
+									title="Notes"
+									className={`rounded p-0.5 ${row.notes ? 'text-amber-600' : 'text-slate-400 hover:text-slate-600'}`}
+								>
+									<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+										<path d="M3 3h10v9l-3 2H3z" />
+										<path d="M5.5 6.5h5M5.5 9h3.5" strokeLinecap="round" />
+									</svg>
+								</button>
+							</div>
+							<div className="mt-1.5 grid grid-cols-4 gap-1">
+								{VOTE_BUTTONS.map(b => (
+									<button
+										key={b.vote}
+										type="button"
+										onClick={() => setVote(scenario.id, row.id, b.vote)}
+										aria-pressed={row.vote === b.vote}
+										className={`rounded px-1 py-0.5 text-[10px] font-semibold ${
+											row.vote === b.vote ? b.activeClass : b.idleClass
+										}`}
+									>
+										{b.label}
+									</button>
+								))}
+							</div>
+							{isNotesOpen && (
+								<div className="mt-2 border-t border-slate-100 pt-2">
+									<input
+										type="text"
+										value={row.notes}
+										onChange={e => setCouncillorNotes(scenario.id, row.id, e.target.value)}
+										placeholder="Add a note…"
+										className="w-full rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs focus:border-slate-400 focus:outline-none"
+										aria-label={`Notes for ${row.placeholder}`}
+									/>
+									<div className="mt-1.5 flex flex-wrap gap-1">
+										{NOTE_PRESETS.map(p => (
+											<button
+												key={p.label}
+												type="button"
+												onClick={() => applyPreset(row.id, p)}
+												title={p.hint}
+												className="rounded-full bg-white px-1.5 py-0.5 text-[10px] text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100 hover:text-slate-900"
+											>
+												{p.label}
+											</button>
+										))}
+										{row.notes && (
+											<button
+												type="button"
+												onClick={() => setCouncillorNotes(scenario.id, row.id, '')}
+												title="Clear note"
+												className="rounded-full bg-white px-1.5 py-0.5 text-[10px] text-slate-400 ring-1 ring-slate-200 hover:bg-rose-50 hover:text-rose-600"
+											>
+												Clear
+											</button>
+										)}
+									</div>
+								</div>
 							)}
 						</div>
-						<div className="mt-1.5 grid grid-cols-4 gap-1">
-							{VOTE_BUTTONS.map(b => (
-								<button
-									key={b.vote}
-									type="button"
-									onClick={() => setVote(scenario.id, row.id, b.vote)}
-									aria-pressed={row.vote === b.vote}
-									className={`rounded px-1 py-0.5 text-[10px] font-semibold ${
-										row.vote === b.vote ? b.activeClass : b.idleClass
-									}`}
-								>
-									{b.label}
-								</button>
-							))}
-						</div>
-					</div>
-				))}
+					)
+				})}
 				{filtered.length === 0 && (
 					<p className="py-2 text-center text-xs italic text-slate-400">No matches.</p>
 				)}

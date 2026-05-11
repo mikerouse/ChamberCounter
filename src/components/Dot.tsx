@@ -39,9 +39,10 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 		touchAction: 'none',
 	}
 
-	const label = councillor.isMayor
-		? `${displayName} — Mayor / Chair`
-		: displayName
+	const labelParts = [displayName]
+	if (councillor.isMayor) labelParts.push('Mayor / Chair')
+	if (councillor.notes) labelParts.push(`Note: ${councillor.notes}`)
+	const label = labelParts.join(' — ')
 
 	const handleContextMenu: React.MouseEventHandler<HTMLDivElement> = e => {
 		if (!onContextMenu) return
