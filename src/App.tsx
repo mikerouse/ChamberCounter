@@ -3,8 +3,10 @@ import { toPng } from 'html-to-image'
 import { Chamber } from '@/components/Chamber'
 import { SetupPanel } from '@/components/SetupPanel'
 import { TallyPanel } from '@/components/TallyPanel'
+import { Toasts } from '@/components/Toasts'
 import { clearShareHash, readSharedScenarioFromHash } from '@/domain/share'
 import { ensureSeedScenario, selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
+import { toast } from '@/store/toasts'
 
 function isEditableTarget(target: EventTarget | null): boolean {
 	if (!(target instanceof HTMLElement)) return false
@@ -57,9 +59,10 @@ export default function App() {
 			link.download = `${safeName}.png`
 			link.href = dataUrl
 			link.click()
+			toast('PNG exported', 'success')
 		} catch (err) {
 			console.error('PNG export failed', err)
-			window.alert('Could not export PNG. See the console for details.')
+			toast('Could not export PNG. See the console for details.', 'error')
 		} finally {
 			setExporting(false)
 		}
@@ -98,6 +101,7 @@ export default function App() {
 
 	return (
 		<div className="flex h-screen flex-col bg-slate-50">
+			<Toasts />
 			<header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 lg:px-4">
 				<div className="flex min-w-0 items-center gap-2">
 					<button

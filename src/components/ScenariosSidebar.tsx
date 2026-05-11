@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useChamberStore } from '@/store/useChamberStore'
 import { buildShareUrl } from '@/domain/share'
+import { toast } from '@/store/toasts'
 import type { Scenario } from '@/domain/types'
 
 type RowProps = {
@@ -124,9 +125,23 @@ export function ScenariosSidebar() {
 
 	const handleShare = async (scenario: Scenario) => {
 		const url = buildShareUrl(scenario)
+		const shareData = {
+			title: `ChamberCounter — ${scenario.name}`,
+			text: `Vote scenario: ${scenario.name}`,
+			url,
+		}
+		if (typeof navigator.share === 'function' && navigator.canShare?.(shareData) !== false) {
+			try {
+				await navigator.share(shareData)
+				return
+			} catch (err) {
+				if (err instanceof DOMException && err.name === 'AbortError') return
+				// fall through to clipboard
+			}
+		}
 		try {
 			await navigator.clipboard.writeText(url)
-			window.alert(`Share link copied to clipboard.\n\nAnyone who opens it will be offered to import "${scenario.name}".`)
+			toast(`Share link copied — anyone who opens it can import "${scenario.name}".`, 'success')
 		} catch {
 			window.prompt('Copy this share link:', url)
 		}
