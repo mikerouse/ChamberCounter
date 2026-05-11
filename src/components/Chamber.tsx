@@ -46,6 +46,7 @@ export function Chamber() {
 	const setVote = useChamberStore(s => s.setVote)
 	const setPartyVote = useChamberStore(s => s.setPartyVote)
 	const renameCouncillor = useChamberStore(s => s.renameCouncillor)
+	const setCouncillorNotes = useChamberStore(s => s.setCouncillorNotes)
 
 	const [menuTarget, setMenuTarget] = useState<ContextMenuTarget | null>(null)
 	const [hemicycleHidden, setHemicycleHidden] = useState(false)
@@ -137,6 +138,7 @@ export function Chamber() {
 			displayName: displayNames.get(councillorId) ?? councillorId,
 			partyId: c.partyId,
 			partyName: party?.name ?? 'Unassigned',
+			currentNote: c.notes ?? '',
 			x,
 			y,
 		})
@@ -289,6 +291,11 @@ export function Chamber() {
 					onClose={() => setMenuTarget(null)}
 					onRename={(councillorId, name) => renameCouncillor(scenario.id, councillorId, name)}
 					onPartyVote={(partyId, vote) => setPartyVote(scenario.id, partyId, vote)}
+					onSetNote={(councillorId, note) => setCouncillorNotes(scenario.id, councillorId, note)}
+					onApplyNotePreset={(councillorId, preset) => {
+						setCouncillorNotes(scenario.id, councillorId, preset.note)
+						if (preset.vote) setVote(scenario.id, councillorId, preset.vote)
+					}}
 				/>
 			)}
 		</DndContext>

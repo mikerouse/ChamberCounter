@@ -1,25 +1,8 @@
 import { useMemo, useState } from 'react'
 import { buildDisplayNames } from '@/domain/display'
+import { NOTE_PRESETS, type NotePreset } from '@/domain/notePresets'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import type { VoteState } from '@/domain/types'
-
-type NotePreset = {
-	label: string
-	note: string
-	vote?: Exclude<VoteState, 'unassigned'>
-	hint: string
-}
-
-const NOTE_PRESETS: NotePreset[] = [
-	{ label: 'On leave', note: 'On leave', vote: 'absent', hint: 'Marks Absent and notes the reason' },
-	{ label: 'Sick', note: 'Sick', vote: 'absent', hint: 'Marks Absent and notes the reason' },
-	{ label: 'Paired', note: 'Paired', vote: 'abstain', hint: 'Pairing arrangement → Abstain' },
-	{ label: 'Conflict', note: 'Conflict of interest', vote: 'abstain', hint: 'Legal duty to abstain' },
-	{ label: 'Mat/Pat', note: 'Maternity / paternity leave', vote: 'absent', hint: 'Marks Absent and notes the reason' },
-	{ label: 'Free vote', note: 'Free vote', hint: 'Tags as free vote, leaves vote untouched' },
-	{ label: 'Wobbly', note: 'Wobbly', hint: 'Tags as wobbly, leaves vote untouched' },
-	{ label: 'Likely rebel', note: 'Likely rebel', hint: 'Tags as likely rebel, leaves vote untouched' },
-]
 
 const VOTE_BUTTONS: Array<{ vote: Exclude<VoteState, 'unassigned'>; label: string; activeClass: string; idleClass: string }> = [
 	{

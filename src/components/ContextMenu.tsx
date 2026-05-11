@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { NOTE_PRESETS, type NotePreset } from '@/domain/notePresets'
 import type { VoteState } from '@/domain/types'
 
 export type ContextMenuTarget = {
@@ -6,6 +7,7 @@ export type ContextMenuTarget = {
 	displayName: string
 	partyId: string
 	partyName: string
+	currentNote: string
 	x: number
 	y: number
 }
@@ -15,6 +17,8 @@ type Props = {
 	onClose: () => void
 	onRename: (councillorId: string, newName: string) => void
 	onPartyVote: (partyId: string, vote: Exclude<VoteState, 'unassigned'>) => void
+	onSetNote: (councillorId: string, note: string) => void
+	onApplyNotePreset: (councillorId: string, preset: NotePreset) => void
 }
 
 const PARTY_VOTES: Array<{ vote: Exclude<VoteState, 'unassigned'>; label: string; dot: string }> = [
@@ -24,7 +28,7 @@ const PARTY_VOTES: Array<{ vote: Exclude<VoteState, 'unassigned'>; label: string
 	{ vote: 'absent', label: 'is absent', dot: 'bg-slate-400' },
 ]
 
-export function ContextMenu({ target, onClose, onRename, onPartyVote }: Props) {
+export function ContextMenu({ target, onClose, onRename, onPartyVote, onSetNote, onApplyNotePreset }: Props) {
 	const ref = useRef<HTMLDivElement>(null)
 	const [pos, setPos] = useState({ left: target.x, top: target.y })
 
@@ -65,18 +69,36 @@ export function ContextMenu({ target, onClose, onRename, onPartyVote }: Props) {
 		onRename(target.councillorId, next)
 	}
 
+	const handleCustomNote = () => {
+		const next = window.prompt(`Note for ${target.displayName}`, target.currentNote)
+		onClose()
+		if (next === null) return
+		onSetNote(target.councillorId, next)
+	}
+
+	const handleClearNote = () => {
+		onSetNote(target.councillorId, '')
+		onClose()
+	}
+
 	return (
 		<div
 			ref={ref}
 			role="menu"
 			style={{ position: 'fixed', left: pos.left, top: pos.top, zIndex: 100 }}
-			className="w-56 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
+			className="w-64 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg"
 			onContextMenu={e => e.preventDefault()}
 		>
 			<div className="border-b border-slate-100 px-3 py-2">
 				<p className="truncate text-xs font-semibold text-slate-700">{target.displayName}</p>
 				<p className="truncate text-[11px] text-slate-500">{target.partyName}</p>
+				{target.currentNote && (
+					<p className="mt-1 truncate text-[11px] italic text-amber-700">
+						Note: {target.currentNote}
+					</p>
+				)}
 			</div>
+
 			<button
 				type="button"
 				role="menuitem"
@@ -89,6 +111,52 @@ export function ContextMenu({ target, onClose, onRename, onPartyVote }: Props) {
 				</svg>
 				Rename councillor…
 			</button>
+
+			<div className="border-t border-slate-100 px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+				Note
+			</div>
+			<div className="flex flex-wrap gap-1 px-3 pb-2">
+				{NOTE_PRESETS.map(p => (
+					<button
+						key={p.label}
+						type="button"
+						role="menuitem"
+						onClick={() => {
+							onApplyNotePreset(target.councillorId, p)
+							onClose()
+						}}
+						title={p.hint}
+						className={`rounded-full px-1.5 py-0.5 text-[10px] ring-1 hover:bg-slate-100 hover:text-slate-900 ${
+							target.currentNote.trim().toLowerCase() === p.note.toLowerCase()
+								? 'bg-amber-50 text-amber-800 ring-amber-200'
+								: 'bg-white text-slate-600 ring-slate-200'
+						}`}
+					>
+						{p.label}
+					</button>
+				))}
+			</div>
+			<div className="flex gap-1 px-3 pb-2">
+				<button
+					type="button"
+					role="menuitem"
+					onClick={handleCustomNote}
+					className="flex-1 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-600 hover:bg-slate-50"
+				>
+					{target.currentNote ? 'Edit note…' : 'Custom note…'}
+				</button>
+				{target.currentNote && (
+					<button
+						type="button"
+						role="menuitem"
+						onClick={handleClearNote}
+						className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-rose-600 hover:bg-rose-50"
+					>
+						Clear
+					</button>
+				)}
+			</div>
+
 			<div className="border-t border-slate-100 px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
 				All {target.partyName}
 			</div>
