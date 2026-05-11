@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { PartyRow } from './PartyRow'
+import { ScenariosSidebar } from './ScenariosSidebar'
 
 const randomColour = () => {
 	const hue = Math.floor(Math.random() * 360)
@@ -74,6 +75,7 @@ export function SetupPanel() {
 
 	return (
 		<aside className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white">
+			<ScenariosSidebar />
 			<div className="border-b border-slate-200 px-4 py-3">
 				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scenario</h2>
 				<input
