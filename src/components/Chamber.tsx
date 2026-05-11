@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import {
 	DndContext,
 	KeyboardSensor,
@@ -47,6 +48,7 @@ export function Chamber() {
 	const renameCouncillor = useChamberStore(s => s.renameCouncillor)
 
 	const [menuTarget, setMenuTarget] = useState<ContextMenuTarget | null>(null)
+	const [hemicycleHidden, setHemicycleHidden] = useState(false)
 
 	const sensors = useSensors(
 		useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
@@ -143,7 +145,35 @@ export function Chamber() {
 	return (
 		<DndContext sensors={sensors} onDragEnd={onDragEnd} accessibility={{ announcements }}>
 			<div className="mx-auto flex w-full max-w-[1100px] flex-col gap-4 p-3 sm:p-4 lg:h-full">
-				<HemicycleDropTarget>
+				<div className="flex items-center justify-between lg:hidden">
+					<span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+						Chamber
+						<span className="ml-1 text-slate-400 tabular-nums">
+							{byVote.unassigned.length} unassigned
+						</span>
+					</span>
+					<button
+						type="button"
+						onClick={() => setHemicycleHidden(h => !h)}
+						aria-expanded={!hemicycleHidden}
+						aria-controls="chamber-hemicycle"
+						className="rounded border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+					>
+						{hemicycleHidden ? 'Show chamber' : 'Hide chamber'}
+					</button>
+				</div>
+				<AnimatePresence initial={false}>
+					{!hemicycleHidden && (
+						<motion.div
+							key="hemicycle"
+							id="chamber-hemicycle"
+							initial={{ opacity: 0, height: 0 }}
+							animate={{ opacity: 1, height: 'auto' }}
+							exit={{ opacity: 0, height: 0 }}
+							transition={{ duration: 0.18 }}
+							style={{ overflow: 'hidden' }}
+						>
+							<HemicycleDropTarget>
 					<svg
 						viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
 						preserveAspectRatio="xMidYMid meet"
@@ -206,6 +236,9 @@ export function Chamber() {
 						</div>
 					)}
 				</HemicycleDropTarget>
+						</motion.div>
+					)}
+				</AnimatePresence>
 
 				<div className="grid grid-cols-2 gap-3 sm:h-44 sm:shrink-0 sm:grid-cols-4">
 					{VOTE_ORDER.map(vote => (
