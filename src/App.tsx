@@ -8,8 +8,8 @@ export default function App() {
 	const scenario = useChamberStore(selectCurrentScenario)
 
 	useEffect(() => {
-		ensureSeedScenario()
-	}, [])
+		if (!scenario) ensureSeedScenario()
+	}, [scenario])
 
 	return (
 		<div className="flex h-screen flex-col bg-slate-50">

@@ -6,6 +6,7 @@ import {
 	useDroppable,
 	useSensor,
 	useSensors,
+	type Announcements,
 	type DragEndEvent,
 } from '@dnd-kit/core'
 import { layoutHemicycle } from '@/domain/hemicycle'
@@ -77,6 +78,33 @@ export function Chamber() {
 
 	if (!scenario || !layout) return null
 
+	const councillorLabel = (id: string | number) => {
+		const c = scenario.councillors.find(x => x.id === String(id))
+		if (!c) return 'councillor'
+		const party = partyById.get(c.partyId)
+		return c.isMayor ? `Mayor (${party?.name ?? 'unassigned'})` : `${party?.name ?? 'Unassigned'} councillor`
+	}
+
+	const zoneLabel = (vote: VoteState) =>
+		vote === 'unassigned' ? 'the chamber' : `the ${vote} zone`
+
+	const announcements: Announcements = {
+		onDragStart: ({ active }) => `Picked up ${councillorLabel(active.id)}.`,
+		onDragOver: ({ active, over }) => {
+			if (!over) return `${councillorLabel(active.id)} is not over a drop zone.`
+			const vote = over.data.current?.vote as VoteState | undefined
+			return vote ? `${councillorLabel(active.id)} over ${zoneLabel(vote)}.` : ''
+		},
+		onDragEnd: ({ active, over }) => {
+			if (!over) return `Cancelled dragging ${councillorLabel(active.id)}.`
+			const vote = over.data.current?.vote as VoteState | undefined
+			return vote
+				? `Moved ${councillorLabel(active.id)} to ${zoneLabel(vote)}.`
+				: `Dropped ${councillorLabel(active.id)}.`
+		},
+		onDragCancel: ({ active }) => `Cancelled dragging ${councillorLabel(active.id)}.`,
+	}
+
 	const onDragEnd = (event: DragEndEvent) => {
 		const councillorId = event.active.data.current?.councillorId as string | undefined
 		const vote = event.over?.data.current?.vote as VoteState | undefined
@@ -85,7 +113,7 @@ export function Chamber() {
 	}
 
 	return (
-		<DndContext sensors={sensors} onDragEnd={onDragEnd}>
+		<DndContext sensors={sensors} onDragEnd={onDragEnd} accessibility={{ announcements }}>
 			<div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-4 p-4">
 				<HemicycleDropTarget>
 					<svg

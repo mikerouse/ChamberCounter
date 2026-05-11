@@ -1,6 +1,6 @@
 # ChamberCounter — v1 specification
 
-> Status: approved for build, 2026-05-11
+> Status: shipped 2026-05-11
 > Owner: Mike Rouse
 
 ## 1. Purpose
@@ -217,6 +217,7 @@ Each phase is a commit boundary.
 Logged here so they're not forgotten:
 
 - Mobile / touch layout (deferred to v2)
+- Dark mode (deferred to v2 — adding `dark:` variants across every component is a bigger pass than v1 warrants)
 - Export to PNG / PDF
 - Shareable URL-encoded scenarios
 - Cloud sync / multi-user
