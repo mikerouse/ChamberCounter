@@ -4,11 +4,13 @@ import type { Councillor, Party } from '@/domain/types'
 type Props = {
 	councillor: Councillor
 	party: Party | undefined
+	displayName: string
 	hemicycleX?: number
 	hemicycleY?: number
+	onContextMenu?: (councillorId: string, x: number, y: number) => void
 }
 
-export function Dot({ councillor, party, hemicycleX, hemicycleY }: Props) {
+export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, onContextMenu }: Props) {
 	const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
 		id: councillor.id,
 		data: { councillorId: councillor.id },
@@ -37,8 +39,15 @@ export function Dot({ councillor, party, hemicycleX, hemicycleY }: Props) {
 	}
 
 	const label = councillor.isMayor
-		? `${party?.name ?? 'Unassigned'} — Mayor / Chair`
-		: (party?.name ?? 'Unassigned')
+		? `${displayName} — Mayor / Chair`
+		: displayName
+
+	const handleContextMenu: React.MouseEventHandler<HTMLDivElement> = e => {
+		if (!onContextMenu) return
+		e.preventDefault()
+		e.stopPropagation()
+		onContextMenu(councillor.id, e.clientX, e.clientY)
+	}
 
 	return (
 		<div
@@ -47,6 +56,7 @@ export function Dot({ councillor, party, hemicycleX, hemicycleY }: Props) {
 			className="h-[22px] w-[22px] rounded-full border-2 border-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
 			title={label}
 			aria-label={label}
+			onContextMenu={handleContextMenu}
 			{...listeners}
 			{...attributes}
 		>

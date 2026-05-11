@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { buildDisplayNames } from '@/domain/display'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { PartyRow } from './PartyRow'
 import { ScenariosSidebar } from './ScenariosSidebar'
@@ -55,7 +56,7 @@ export function SetupPanel() {
 
 	const councillorOptions = useMemo(() => {
 		if (!scenario) return [] as { id: string; label: string }[]
-		const partyCount = new Map<string, number>()
+		const names = buildDisplayNames(scenario.councillors, scenario.parties)
 		const sorted = [...scenario.councillors].sort((a, b) => {
 			const pa = partyIndexById.get(a.partyId) ?? Number.MAX_SAFE_INTEGER
 			const pb = partyIndexById.get(b.partyId) ?? Number.MAX_SAFE_INTEGER
@@ -64,10 +65,10 @@ export function SetupPanel() {
 		})
 		return sorted.map(c => {
 			const party = scenario.parties.find(p => p.id === c.partyId)
-			const n = (partyCount.get(c.partyId) ?? 0) + 1
-			partyCount.set(c.partyId, n)
-			const partyName = party?.name ?? 'Unassigned'
-			return { id: c.id, label: `${partyName} #${n}` }
+			const display = names.get(c.id) ?? c.id
+			const hasCustomName = !!c.name?.trim()
+			const label = hasCustomName && party ? `${display} (${party.name})` : display
+			return { id: c.id, label }
 		})
 	}, [scenario, partyIndexById])
 

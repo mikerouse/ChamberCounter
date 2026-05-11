@@ -12,6 +12,7 @@ export type Councillor = {
 	isMayor: boolean
 	seatIndex: number
 	vote: VoteState
+	name?: string
 }
 
 export type ThresholdRule =

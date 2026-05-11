@@ -165,6 +165,61 @@ describe('useChamberStore: votes and rules', () => {
 	})
 })
 
+describe('useChamberStore: setPartyVote', () => {
+	it('updates only councillors of the given party', () => {
+		const id = api().createScenario('S', 8)
+		const pa = api().addParty(id, 'A', '#000')
+		const pb = api().addParty(id, 'B', '#111')
+		api().setPartyCount(id, pa, 5)
+		api().setPartyCount(id, pb, 3)
+		api().setPartyVote(id, pa, 'aye')
+		const s = api().scenarios[id]
+		expect(s.councillors.filter(c => c.partyId === pa).every(c => c.vote === 'aye')).toBe(true)
+		expect(s.councillors.filter(c => c.partyId === pb).every(c => c.vote === 'unassigned')).toBe(true)
+	})
+
+	it('overwrites existing votes for that party', () => {
+		const id = api().createScenario('S', 5)
+		const pa = api().addParty(id, 'A', '#000')
+		api().setPartyCount(id, pa, 5)
+		const cs = api().scenarios[id].councillors
+		api().setVote(id, cs[0].id, 'no')
+		api().setVote(id, cs[1].id, 'abstain')
+		api().setPartyVote(id, pa, 'aye')
+		expect(api().scenarios[id].councillors.every(c => c.vote === 'aye')).toBe(true)
+	})
+})
+
+describe('useChamberStore: renameCouncillor', () => {
+	it('sets a custom name', () => {
+		const id = api().createScenario('S', 3)
+		const pa = api().addParty(id, 'A', '#000')
+		api().setPartyCount(id, pa, 3)
+		const c = api().scenarios[id].councillors[0]
+		api().renameCouncillor(id, c.id, 'Sarah Smith')
+		expect(api().scenarios[id].councillors.find(x => x.id === c.id)?.name).toBe('Sarah Smith')
+	})
+
+	it('clears the name when given empty / whitespace', () => {
+		const id = api().createScenario('S', 3)
+		const pa = api().addParty(id, 'A', '#000')
+		api().setPartyCount(id, pa, 3)
+		const c = api().scenarios[id].councillors[0]
+		api().renameCouncillor(id, c.id, 'Sarah')
+		api().renameCouncillor(id, c.id, '   ')
+		expect(api().scenarios[id].councillors.find(x => x.id === c.id)?.name).toBeUndefined()
+	})
+
+	it('trims whitespace from the name', () => {
+		const id = api().createScenario('S', 3)
+		const pa = api().addParty(id, 'A', '#000')
+		api().setPartyCount(id, pa, 3)
+		const c = api().scenarios[id].councillors[0]
+		api().renameCouncillor(id, c.id, '  Sarah Smith  ')
+		expect(api().scenarios[id].councillors.find(x => x.id === c.id)?.name).toBe('Sarah Smith')
+	})
+})
+
 describe('useChamberStore: chamber size', () => {
 	it('shrinking chamberSize trims excess councillors', () => {
 		const id = api().createScenario('S', 10)

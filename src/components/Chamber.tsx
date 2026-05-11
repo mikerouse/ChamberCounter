@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
 	DndContext,
 	KeyboardSensor,
@@ -9,9 +9,11 @@ import {
 	type Announcements,
 	type DragEndEvent,
 } from '@dnd-kit/core'
+import { buildDisplayNames } from '@/domain/display'
 import { layoutHemicycle } from '@/domain/hemicycle'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import type { Councillor, Party, VoteState } from '@/domain/types'
+import { ContextMenu, type ContextMenuTarget } from './ContextMenu'
 import { Dot } from './Dot'
 import { VoteZone } from './VoteZone'
 
@@ -39,6 +41,10 @@ function HemicycleDropTarget({ children }: { children: React.ReactNode }) {
 export function Chamber() {
 	const scenario = useChamberStore(selectCurrentScenario)
 	const setVote = useChamberStore(s => s.setVote)
+	const setPartyVote = useChamberStore(s => s.setPartyVote)
+	const renameCouncillor = useChamberStore(s => s.renameCouncillor)
+
+	const [menuTarget, setMenuTarget] = useState<ContextMenuTarget | null>(null)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -61,6 +67,11 @@ export function Chamber() {
 	const partyById = useMemo(() => {
 		if (!scenario) return new Map<string, Party>()
 		return new Map(scenario.parties.map(p => [p.id, p] as const))
+	}, [scenario])
+
+	const displayNames = useMemo(() => {
+		if (!scenario) return new Map<string, string>()
+		return buildDisplayNames(scenario.councillors, scenario.parties)
 	}, [scenario])
 
 	const byVote = useMemo(() => {
@@ -110,6 +121,20 @@ export function Chamber() {
 		const vote = event.over?.data.current?.vote as VoteState | undefined
 		if (!councillorId || !vote) return
 		setVote(scenario.id, councillorId, vote)
+	}
+
+	const openContextMenu = (councillorId: string, x: number, y: number) => {
+		const c = scenario.councillors.find(x => x.id === councillorId)
+		if (!c) return
+		const party = partyById.get(c.partyId)
+		setMenuTarget({
+			councillorId,
+			displayName: displayNames.get(councillorId) ?? councillorId,
+			partyId: c.partyId,
+			partyName: party?.name ?? 'Unassigned',
+			x,
+			y,
+		})
 	}
 
 	return (
@@ -164,8 +189,10 @@ export function Chamber() {
 								key={c.id}
 								councillor={c}
 								party={partyById.get(c.partyId)}
+								displayName={displayNames.get(c.id) ?? c.id}
 								hemicycleX={(seat.x / VIEWBOX_W) * 100}
 								hemicycleY={(seat.y / VIEWBOX_H) * 100}
+								onContextMenu={openContextMenu}
 							/>
 						)
 					})}
@@ -184,10 +211,20 @@ export function Chamber() {
 							vote={vote}
 							councillors={byVote[vote]}
 							partyById={partyById}
+							displayNames={displayNames}
+							onContextMenu={openContextMenu}
 						/>
 					))}
 				</div>
 			</div>
+			{menuTarget && (
+				<ContextMenu
+					target={menuTarget}
+					onClose={() => setMenuTarget(null)}
+					onRename={(councillorId, name) => renameCouncillor(scenario.id, councillorId, name)}
+					onPartyVote={(partyId, vote) => setPartyVote(scenario.id, partyId, vote)}
+				/>
+			)}
 		</DndContext>
 	)
 }

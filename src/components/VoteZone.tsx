@@ -6,6 +6,8 @@ type Props = {
 	vote: Exclude<VoteState, 'unassigned'>
 	councillors: Councillor[]
 	partyById: Map<string, Party>
+	displayNames: Map<string, string>
+	onContextMenu: (councillorId: string, x: number, y: number) => void
 }
 
 const ZONE_THEME: Record<Exclude<VoteState, 'unassigned'>, { label: string; bg: string; text: string; ring: string }> = {
@@ -35,7 +37,7 @@ const ZONE_THEME: Record<Exclude<VoteState, 'unassigned'>, { label: string; bg: 
 	},
 }
 
-export function VoteZone({ vote, councillors, partyById }: Props) {
+export function VoteZone({ vote, councillors, partyById, displayNames, onContextMenu }: Props) {
 	const { isOver, setNodeRef } = useDroppable({
 		id: `zone-${vote}`,
 		data: { vote },
@@ -56,7 +58,13 @@ export function VoteZone({ vote, councillors, partyById }: Props) {
 			</div>
 			<div className="flex flex-1 flex-wrap content-start gap-1.5 overflow-y-auto">
 				{councillors.map(c => (
-					<Dot key={c.id} councillor={c} party={partyById.get(c.partyId)} />
+					<Dot
+						key={c.id}
+						councillor={c}
+						party={partyById.get(c.partyId)}
+						displayName={displayNames.get(c.id) ?? c.id}
+						onContextMenu={onContextMenu}
+					/>
 				))}
 			</div>
 		</div>
