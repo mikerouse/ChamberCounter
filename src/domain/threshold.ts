@@ -62,12 +62,21 @@ export function evaluateRule(rule: ThresholdRule, scenario: Scenario): RuleResul
 		}
 	}
 
-	// whole-chamber-majority
-	const needed = Math.floor(scenario.chamberSize / 2) + 1
-	if (counts.aye >= needed) {
-		return { ...base, outcome: 'pass', needed, explanation: `${counts.aye} ayes ≥ ${needed} required (majority of ${scenario.chamberSize}).` }
+	if (rule.kind === 'whole-chamber-majority') {
+		const needed = Math.floor(scenario.chamberSize / 2) + 1
+		if (counts.aye >= needed) {
+			return { ...base, outcome: 'pass', needed, explanation: `${counts.aye} ayes ≥ ${needed} required (majority of ${scenario.chamberSize}).` }
+		}
+		return { ...base, outcome: 'fail', needed, explanation: `${counts.aye} ayes < ${needed} required (majority of ${scenario.chamberSize}).` }
 	}
-	return { ...base, outcome: 'fail', needed, explanation: `${counts.aye} ayes < ${needed} required (majority of ${scenario.chamberSize}).` }
+
+	// supermajority — fraction of the whole chamber
+	const needed = Math.ceil((rule.numerator * scenario.chamberSize) / rule.denominator)
+	const label = `${rule.numerator}/${rule.denominator} of ${scenario.chamberSize}`
+	if (counts.aye >= needed) {
+		return { ...base, outcome: 'pass', needed, explanation: `${counts.aye} ayes ≥ ${needed} required (${label}).` }
+	}
+	return { ...base, outcome: 'fail', needed, explanation: `${counts.aye} ayes < ${needed} required (${label}).` }
 }
 
 export function evaluate(scenario: Scenario): RuleResult[] {

@@ -17,7 +17,8 @@ describe('useChamberStore: scenarios', () => {
 		const current = selectCurrentScenario(api())
 		expect(current?.name).toBe('Budget')
 		expect(current?.chamberSize).toBe(52)
-		expect(current?.enabledRules).toHaveLength(2)
+		expect(current?.enabledRules).toHaveLength(1)
+		expect(current?.enabledRules[0].kind).toBe('simple-majority')
 	})
 
 	it('duplicateScenario clones and selects the copy', () => {
@@ -150,11 +151,39 @@ describe('useChamberStore: votes and rules', () => {
 
 	it('toggleRule removes and re-adds rules', () => {
 		const id = api().createScenario('S', 5)
-		expect(api().scenarios[id].enabledRules).toHaveLength(2)
-		api().toggleRule(id, 'whole-chamber-majority')
-		expect(api().scenarios[id].enabledRules.some(r => r.kind === 'whole-chamber-majority')).toBe(false)
+		expect(api().scenarios[id].enabledRules).toHaveLength(1)
 		api().toggleRule(id, 'whole-chamber-majority')
 		expect(api().scenarios[id].enabledRules.some(r => r.kind === 'whole-chamber-majority')).toBe(true)
+		api().toggleRule(id, 'whole-chamber-majority')
+		expect(api().scenarios[id].enabledRules.some(r => r.kind === 'whole-chamber-majority')).toBe(false)
+	})
+
+	it('toggleRule adds supermajority with default 2/3 fraction', () => {
+		const id = api().createScenario('S', 52)
+		api().toggleRule(id, 'supermajority')
+		const rule = api().scenarios[id].enabledRules.find(r => r.kind === 'supermajority')
+		expect(rule?.kind === 'supermajority' && rule.numerator).toBe(2)
+		expect(rule?.kind === 'supermajority' && rule.denominator).toBe(3)
+	})
+
+	it('setSupermajorityFraction updates the threshold', () => {
+		const id = api().createScenario('S', 52)
+		api().toggleRule(id, 'supermajority')
+		api().setSupermajorityFraction(id, 3, 4)
+		const rule = api().scenarios[id].enabledRules.find(r => r.kind === 'supermajority')
+		expect(rule?.kind === 'supermajority' && rule.numerator).toBe(3)
+		expect(rule?.kind === 'supermajority' && rule.denominator).toBe(4)
+	})
+
+	it('setSupermajorityFraction rejects invalid fractions', () => {
+		const id = api().createScenario('S', 52)
+		api().toggleRule(id, 'supermajority')
+		api().setSupermajorityFraction(id, 5, 4)
+		api().setSupermajorityFraction(id, 0, 4)
+		api().setSupermajorityFraction(id, 2, 0)
+		const rule = api().scenarios[id].enabledRules.find(r => r.kind === 'supermajority')
+		expect(rule?.kind === 'supermajority' && rule.numerator).toBe(2)
+		expect(rule?.kind === 'supermajority' && rule.denominator).toBe(3)
 	})
 
 	it('setMayorBreaksTies flips the flag on simple-majority', () => {

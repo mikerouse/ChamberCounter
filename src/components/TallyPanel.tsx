@@ -24,6 +24,7 @@ export function TallyPanel() {
 	const scenario = useChamberStore(selectCurrentScenario)
 	const toggleRule = useChamberStore(s => s.toggleRule)
 	const setMayorBreaksTies = useChamberStore(s => s.setMayorBreaksTies)
+	const setSupermajorityFraction = useChamberStore(s => s.setSupermajorityFraction)
 	const setCastingVote = useChamberStore(s => s.setCastingVote)
 
 	const counts = useMemo(() => (scenario ? countByVote(scenario.councillors) : null), [scenario])
@@ -51,7 +52,13 @@ export function TallyPanel() {
 	const simpleRule = scenario.enabledRules.find(r => r.kind === 'simple-majority')
 	const simpleEnabled = !!simpleRule
 	const wholeEnabled = scenario.enabledRules.some(r => r.kind === 'whole-chamber-majority')
+	const superRule = scenario.enabledRules.find(r => r.kind === 'supermajority')
+	const superEnabled = !!superRule
 	const mayorBreaksTies = simpleRule?.kind === 'simple-majority' ? simpleRule.mayorBreaksTies : false
+	const superFraction =
+		superRule?.kind === 'supermajority'
+			? `${superRule.numerator}/${superRule.denominator}`
+			: '2/3'
 
 	return (
 		<aside className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-l border-slate-200 bg-white">
@@ -156,6 +163,35 @@ export function TallyPanel() {
 						/>
 						<span className="text-slate-700">Majority of whole chamber</span>
 					</label>
+					<label className="flex items-center gap-2">
+						<input
+							type="checkbox"
+							checked={superEnabled}
+							onChange={() => toggleRule(scenario.id, 'supermajority')}
+							className="h-3.5 w-3.5"
+						/>
+						<span className="text-slate-700">Supermajority</span>
+						<span className="text-[10px] text-slate-400">(constitutional)</span>
+					</label>
+					{superEnabled && (
+						<div className="ml-5 flex items-center gap-2">
+							<label className="text-slate-600" htmlFor="super-fraction-select">Threshold</label>
+							<select
+								id="super-fraction-select"
+								value={superFraction}
+								onChange={e => {
+									const [n, d] = e.target.value.split('/').map(Number)
+									setSupermajorityFraction(scenario.id, n, d)
+								}}
+								className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-xs focus:border-slate-400 focus:outline-none"
+							>
+								<option value="3/5">Three-fifths (3/5)</option>
+								<option value="2/3">Two-thirds (2/3)</option>
+								<option value="3/4">Three-quarters (3/4)</option>
+								<option value="4/5">Four-fifths (4/5)</option>
+							</select>
+						</div>
+					)}
 				</div>
 			</div>
 		</aside>

@@ -160,6 +160,51 @@ describe('evaluateRule: whole-chamber-majority', () => {
 	})
 })
 
+describe('evaluateRule: supermajority', () => {
+	it('two-thirds threshold for 52-seat chamber is 35', () => {
+		const rule: ThresholdRule = { kind: 'supermajority', numerator: 2, denominator: 3 }
+		const s = makeScenario(makeCouncillors([]), [rule], 52)
+		expect(evaluateRule(rule, s).needed).toBe(35)
+	})
+
+	it('three-quarters threshold for 52-seat chamber is 39', () => {
+		const rule: ThresholdRule = { kind: 'supermajority', numerator: 3, denominator: 4 }
+		const s = makeScenario(makeCouncillors([]), [rule], 52)
+		expect(evaluateRule(rule, s).needed).toBe(39)
+	})
+
+	it('rounds up: 10-seat chamber with 2/3 needs 7', () => {
+		const rule: ThresholdRule = { kind: 'supermajority', numerator: 2, denominator: 3 }
+		const s = makeScenario(makeCouncillors([]), [rule], 10)
+		expect(evaluateRule(rule, s).needed).toBe(7)
+	})
+
+	it('passes when ayes meet the threshold', () => {
+		const rule: ThresholdRule = { kind: 'supermajority', numerator: 2, denominator: 3 }
+		const votes: VoteState[] = [
+			...Array(7).fill('aye') as VoteState[],
+			...Array(3).fill('no') as VoteState[],
+		]
+		const s = makeScenario(makeCouncillors(votes), [rule], 10)
+		const r = evaluateRule(rule, s)
+		expect(r.outcome).toBe('pass')
+		expect(r.needed).toBe(7)
+	})
+
+	it('fails when ayes fall short even if they beat noes', () => {
+		const rule: ThresholdRule = { kind: 'supermajority', numerator: 2, denominator: 3 }
+		const votes: VoteState[] = [
+			...Array(6).fill('aye') as VoteState[],
+			...Array(2).fill('no') as VoteState[],
+			...Array(2).fill('abstain') as VoteState[],
+		]
+		const s = makeScenario(makeCouncillors(votes), [rule], 10)
+		const r = evaluateRule(rule, s)
+		expect(r.outcome).toBe('fail')
+		expect(r.explanation).toContain('2/3 of 10')
+	})
+})
+
 describe('evaluate', () => {
 	it('returns one result per enabled rule, preserving order', () => {
 		const rules: ThresholdRule[] = [

@@ -18,6 +18,9 @@ export type Councillor = {
 export type ThresholdRule =
 	| { kind: 'simple-majority'; mayorBreaksTies: boolean }
 	| { kind: 'whole-chamber-majority' }
+	| { kind: 'supermajority'; numerator: number; denominator: number }
+
+export type ThresholdRuleKind = ThresholdRule['kind']
 
 export type CastingVote = 'aye' | 'no'
 

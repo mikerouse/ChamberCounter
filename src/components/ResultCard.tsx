@@ -41,9 +41,10 @@ const OUTCOME_STYLE: Record<RuleResult['outcome'], { badge: string; bg: string; 
 	},
 }
 
-const RULE_LABEL: Record<RuleResult['rule']['kind'], string> = {
-	'simple-majority': 'Simple majority',
-	'whole-chamber-majority': 'Whole-chamber majority',
+function ruleLabel(rule: RuleResult['rule']): string {
+	if (rule.kind === 'simple-majority') return 'Simple majority'
+	if (rule.kind === 'whole-chamber-majority') return 'Whole-chamber majority'
+	return `Supermajority (${rule.numerator}/${rule.denominator})`
 }
 
 type Props = {
@@ -54,7 +55,7 @@ type Props = {
 
 export function ResultCard({ result, castingVote, onCast }: Props) {
 	const style = OUTCOME_STYLE[result.outcome]
-	const label = RULE_LABEL[result.rule.kind]
+	const label = ruleLabel(result.rule)
 	const isSimpleWithCasting = result.rule.kind === 'simple-majority' && result.rule.mayorBreaksTies
 
 	const showCastingControls =

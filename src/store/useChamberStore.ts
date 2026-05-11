@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { layoutHemicycle } from '@/domain/hemicycle'
 import { newCouncillor, newId, newParty, newScenario } from '@/domain/factory'
 import { UK_PARTY_PRESETS } from '@/domain/presets'
-import type { CastingVote, Councillor, Party, Scenario, VoteState } from '@/domain/types'
+import type { CastingVote, Councillor, Party, Scenario, ThresholdRuleKind, VoteState } from '@/domain/types'
 
 type ScenarioMap = Record<string, Scenario>
 
@@ -36,8 +36,9 @@ export type ChamberState = {
 	resetVotes: (id: string) => void
 
 	// Rules
-	toggleRule: (id: string, kind: 'simple-majority' | 'whole-chamber-majority') => void
+	toggleRule: (id: string, kind: ThresholdRuleKind) => void
 	setMayorBreaksTies: (id: string, on: boolean) => void
+	setSupermajorityFraction: (id: string, numerator: number, denominator: number) => void
 
 	// Casting vote (Mayor's separate tie-breaker)
 	setCastingVote: (id: string, vote: CastingVote | null) => void
@@ -301,9 +302,12 @@ export const useChamberStore = create<ChamberState>()(
 						if (present) {
 							return { ...s, enabledRules: s.enabledRules.filter(r => r.kind !== kind) }
 						}
-						const restored = kind === 'simple-majority'
-							? { kind, mayorBreaksTies: true } as const
-							: { kind } as const
+						const restored =
+							kind === 'simple-majority'
+								? { kind, mayorBreaksTies: true } as const
+								: kind === 'supermajority'
+									? { kind, numerator: 2, denominator: 3 } as const
+									: { kind: 'whole-chamber-majority' } as const
 						return { ...s, enabledRules: [...s.enabledRules, restored] }
 					}),
 				)
@@ -315,6 +319,18 @@ export const useChamberStore = create<ChamberState>()(
 						...s,
 						enabledRules: s.enabledRules.map(r =>
 							r.kind === 'simple-majority' ? { ...r, mayorBreaksTies: on } : r,
+						),
+					})),
+				)
+			},
+
+			setSupermajorityFraction: (id, numerator, denominator) => {
+				if (denominator <= 0 || numerator <= 0 || numerator > denominator) return
+				set(state =>
+					withScenarioUpdate(state, id, s => ({
+						...s,
+						enabledRules: s.enabledRules.map(r =>
+							r.kind === 'supermajority' ? { ...r, numerator, denominator } : r,
 						),
 					})),
 				)

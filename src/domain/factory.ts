@@ -25,7 +25,6 @@ export function newCouncillor(partyId: string, seatIndex: number, isMayor = fals
 export function defaultRules(): ThresholdRule[] {
 	return [
 		{ kind: 'simple-majority', mayorBreaksTies: true },
-		{ kind: 'whole-chamber-majority' },
 	]
 }
 
