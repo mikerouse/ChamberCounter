@@ -1,4 +1,5 @@
 import { useDraggable } from '@dnd-kit/core'
+import { motion } from 'motion/react'
 import type { Councillor, Party } from '@/domain/types'
 
 type Props = {
@@ -50,8 +51,11 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 	}
 
 	return (
-		<div
+		<motion.div
 			ref={setNodeRef}
+			layout={!isDragging}
+			layoutId={`dot-${councillor.id}`}
+			transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.7 }}
 			style={style}
 			className="h-[22px] w-[22px] rounded-full border-2 border-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
 			title={label}
@@ -84,6 +88,6 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 					</svg>
 				</>
 			)}
-		</div>
+		</motion.div>
 	)
 }
