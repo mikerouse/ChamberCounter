@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Chamber } from '@/components/Chamber'
 import { SetupPanel } from '@/components/SetupPanel'
 import { ensureSeedScenario, selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 
@@ -22,11 +23,8 @@ export default function App() {
 			</header>
 			<main className="flex min-h-0 flex-1">
 				<SetupPanel />
-				<section className="flex flex-1 items-center justify-center text-slate-400">
-					<div className="text-center">
-						<p className="text-sm">Chamber view — Phase 4.</p>
-						<p className="text-xs">Drag councillors to vote zones (Phase 5).</p>
-					</div>
+				<section className="flex min-w-0 flex-1 flex-col">
+					<Chamber />
 				</section>
 				<aside className="w-80 shrink-0 border-l border-slate-200 bg-white p-4 text-xs text-slate-400">
 					Tally panel — Phase 6.
