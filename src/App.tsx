@@ -1,4 +1,5 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { toPng } from 'html-to-image'
 import { Chamber } from '@/components/Chamber'
 import { SetupPanel } from '@/components/SetupPanel'
 import { TallyPanel } from '@/components/TallyPanel'
@@ -29,6 +30,30 @@ export default function App() {
 	)
 
 	const [compact, setCompact] = useState(false)
+	const [exporting, setExporting] = useState(false)
+	const captureRef = useRef<HTMLElement>(null)
+
+	const exportPng = async () => {
+		if (!captureRef.current) return
+		setExporting(true)
+		try {
+			const dataUrl = await toPng(captureRef.current, {
+				backgroundColor: '#f7f7f9',
+				pixelRatio: 2,
+				cacheBust: true,
+			})
+			const link = document.createElement('a')
+			const safeName = (scenario?.name ?? 'chamber').replace(/[^a-z0-9-_]+/gi, '-')
+			link.download = `${safeName}.png`
+			link.href = dataUrl
+			link.click()
+		} catch (err) {
+			console.error('PNG export failed', err)
+			window.alert('Could not export PNG. See the console for details.')
+		} finally {
+			setExporting(false)
+		}
+	}
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
@@ -115,6 +140,16 @@ export default function App() {
 					>
 						Print
 					</button>
+					<button
+						type="button"
+						onClick={exportPng}
+						disabled={exporting}
+						title="Export the chamber as a PNG image"
+						aria-label="Export PNG"
+						className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-50 disabled:cursor-wait disabled:opacity-50"
+					>
+						{exporting ? 'Exporting…' : 'PNG'}
+					</button>
 					<div className="text-xs text-slate-500 tabular-nums">
 						{scenario ? `${scenario.councillors.length} / ${scenario.chamberSize} seated` : '—'}
 					</div>
@@ -122,7 +157,7 @@ export default function App() {
 			</header>
 			<main className="flex min-h-0 flex-1">
 				{!compact && <SetupPanel />}
-				<section className="flex min-w-0 flex-1 flex-col">
+				<section ref={captureRef} className="flex min-w-0 flex-1 flex-col bg-slate-50">
 					<Chamber />
 				</section>
 				{!compact && <TallyPanel />}
