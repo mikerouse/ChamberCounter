@@ -8,9 +8,19 @@ import type { SharePayload } from '@/domain/share'
 
 type ScenarioMap = Record<string, Scenario>
 
+const HISTORY_LIMIT = 50
+
 export type ChamberState = {
 	scenarios: ScenarioMap
 	currentScenarioId: string | null
+	history: Record<string, Scenario[]>
+	redoStack: Record<string, Scenario[]>
+
+	// History
+	undo: () => boolean
+	redo: () => boolean
+	canUndo: () => boolean
+	canRedo: () => boolean
 
 	// Scenario CRUD
 	createScenario: (name: string, chamberSize: number) => string
@@ -95,11 +105,84 @@ function withScenarioUpdate(state: ChamberState, id: string, fn: (s: Scenario) =
 	return { scenarios: { ...state.scenarios, [id]: updated } }
 }
 
+function withScenarioUpdateAndHistory(state: ChamberState, id: string, fn: (s: Scenario) => Scenario): Partial<ChamberState> {
+	const target = state.scenarios[id]
+	if (!target) return {}
+	const updated = touch(fn(target))
+	if (updated === target) return {}
+	const history = { ...state.history }
+	const prev = history[id] ?? []
+	history[id] = [...prev, target].slice(-HISTORY_LIMIT)
+	const redoStack = { ...state.redoStack }
+	redoStack[id] = []
+	return {
+		scenarios: { ...state.scenarios, [id]: updated },
+		history,
+		redoStack,
+	}
+}
+
 export const useChamberStore = create<ChamberState>()(
 	persist(
 		(set, get) => ({
 			scenarios: {},
 			currentScenarioId: null,
+			history: {},
+			redoStack: {},
+
+			undo: () => {
+				const state = get()
+				const id = state.currentScenarioId
+				if (!id) return false
+				const stack = state.history[id]
+				if (!stack || stack.length === 0) return false
+				const current = state.scenarios[id]
+				if (!current) return false
+				const previous = stack[stack.length - 1]
+				const newHistory = { ...state.history, [id]: stack.slice(0, -1) }
+				const redoStack = state.redoStack[id] ?? []
+				const newRedo = { ...state.redoStack, [id]: [...redoStack, current].slice(-HISTORY_LIMIT) }
+				set({
+					scenarios: { ...state.scenarios, [id]: previous },
+					history: newHistory,
+					redoStack: newRedo,
+				})
+				return true
+			},
+
+			redo: () => {
+				const state = get()
+				const id = state.currentScenarioId
+				if (!id) return false
+				const stack = state.redoStack[id]
+				if (!stack || stack.length === 0) return false
+				const current = state.scenarios[id]
+				if (!current) return false
+				const next = stack[stack.length - 1]
+				const newRedo = { ...state.redoStack, [id]: stack.slice(0, -1) }
+				const history = state.history[id] ?? []
+				const newHistory = { ...state.history, [id]: [...history, current].slice(-HISTORY_LIMIT) }
+				set({
+					scenarios: { ...state.scenarios, [id]: next },
+					history: newHistory,
+					redoStack: newRedo,
+				})
+				return true
+			},
+
+			canUndo: () => {
+				const state = get()
+				const id = state.currentScenarioId
+				if (!id) return false
+				return (state.history[id]?.length ?? 0) > 0
+			},
+
+			canRedo: () => {
+				const state = get()
+				const id = state.currentScenarioId
+				if (!id) return false
+				return (state.redoStack[id]?.length ?? 0) > 0
+			},
 
 			createScenario: (name, chamberSize) => {
 				const scenario = newScenario(name, chamberSize)
@@ -155,7 +238,7 @@ export const useChamberStore = create<ChamberState>()(
 			setChamberSize: (id, size) => {
 				const safeSize = Math.max(1, Math.min(200, Math.round(size)))
 				set(state =>
-					withScenarioUpdate(state, id, s => {
+					withScenarioUpdateAndHistory(state, id, s => {
 						if (s.councillors.length > safeSize) {
 							const trimmed = s.councillors.slice(0, safeSize)
 							return reassignSeats({ ...s, chamberSize: safeSize, councillors: trimmed })
@@ -168,7 +251,7 @@ export const useChamberStore = create<ChamberState>()(
 			addParty: (id, name, colour) => {
 				const party = newParty(name, colour)
 				set(state =>
-					withScenarioUpdate(state, id, s => ({
+					withScenarioUpdateAndHistory(state, id, s => ({
 						...s,
 						parties: [...s.parties, party],
 					})),
@@ -187,7 +270,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			removeParty: (id, partyId) => {
 				set(state =>
-					withScenarioUpdate(state, id, s => {
+					withScenarioUpdateAndHistory(state, id, s => {
 						if (s.councillors.some(c => c.partyId === partyId)) return s
 						return {
 							...s,
@@ -200,7 +283,7 @@ export const useChamberStore = create<ChamberState>()(
 			setPartyCount: (id, partyId, count) => {
 				const safeCount = Math.max(0, Math.round(count))
 				set(state =>
-					withScenarioUpdate(state, id, s => {
+					withScenarioUpdateAndHistory(state, id, s => {
 						const others = s.councillors.filter(c => c.partyId !== partyId)
 						const existing = s.councillors.filter(c => c.partyId === partyId)
 						const otherCount = others.length
@@ -230,7 +313,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			applyUKPresets: id => {
 				set(state =>
-					withScenarioUpdate(state, id, s => {
+					withScenarioUpdateAndHistory(state, id, s => {
 						const existingNames = new Set(s.parties.map(p => p.name.toLowerCase()))
 						const additions: Party[] = UK_PARTY_PRESETS
 							.filter(p => !existingNames.has(p.name.toLowerCase()))
@@ -242,7 +325,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			setMayor: (id, councillorId) => {
 				set(state =>
-					withScenarioUpdate(state, id, s => {
+					withScenarioUpdateAndHistory(state, id, s => {
 						const next = s.councillors.map(c => ({
 							...c,
 							isMayor: councillorId !== null && c.id === councillorId,
@@ -256,7 +339,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			setVote: (id, councillorId, vote) => {
 				set(state =>
-					withScenarioUpdate(state, id, s => ({
+					withScenarioUpdateAndHistory(state, id, s => ({
 						...s,
 						councillors: s.councillors.map(c =>
 							c.id === councillorId ? { ...c, vote } : c,
@@ -267,7 +350,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			setPartyVote: (id, partyId, vote) => {
 				set(state =>
-					withScenarioUpdate(state, id, s => ({
+					withScenarioUpdateAndHistory(state, id, s => ({
 						...s,
 						councillors: s.councillors.map(c =>
 							c.partyId === partyId ? { ...c, vote } : c,
@@ -292,7 +375,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			resetVotes: id => {
 				set(state =>
-					withScenarioUpdate(state, id, s => ({
+					withScenarioUpdateAndHistory(state, id, s => ({
 						...s,
 						councillors: s.councillors.map(c => ({ ...c, vote: 'unassigned' })),
 					})),
@@ -301,7 +384,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			toggleRule: (id, kind) => {
 				set(state =>
-					withScenarioUpdate(state, id, s => {
+					withScenarioUpdateAndHistory(state, id, s => {
 						const present = s.enabledRules.some(r => r.kind === kind)
 						if (present) {
 							return { ...s, enabledRules: s.enabledRules.filter(r => r.kind !== kind) }
@@ -319,7 +402,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			setMayorBreaksTies: (id, on) => {
 				set(state =>
-					withScenarioUpdate(state, id, s => ({
+					withScenarioUpdateAndHistory(state, id, s => ({
 						...s,
 						enabledRules: s.enabledRules.map(r =>
 							r.kind === 'simple-majority' ? { ...r, mayorBreaksTies: on } : r,
@@ -331,7 +414,7 @@ export const useChamberStore = create<ChamberState>()(
 			setSupermajorityFraction: (id, numerator, denominator) => {
 				if (denominator <= 0 || numerator <= 0 || numerator > denominator) return
 				set(state =>
-					withScenarioUpdate(state, id, s => ({
+					withScenarioUpdateAndHistory(state, id, s => ({
 						...s,
 						enabledRules: s.enabledRules.map(r =>
 							r.kind === 'supermajority' ? { ...r, numerator, denominator } : r,
@@ -342,7 +425,7 @@ export const useChamberStore = create<ChamberState>()(
 
 			setCastingVote: (id, vote) => {
 				set(state =>
-					withScenarioUpdate(state, id, s => {
+					withScenarioUpdateAndHistory(state, id, s => {
 						if (vote === null) {
 							const { castingVote: _drop, ...rest } = s
 							void _drop
