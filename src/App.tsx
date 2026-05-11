@@ -1,10 +1,37 @@
+import { useEffect } from 'react'
+import { SetupPanel } from '@/components/SetupPanel'
+import { ensureSeedScenario, selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
+
 export default function App() {
+	const scenario = useChamberStore(selectCurrentScenario)
+
+	useEffect(() => {
+		ensureSeedScenario()
+	}, [])
+
 	return (
-		<div className="min-h-screen flex items-center justify-center">
-			<div className="text-center">
-				<h1 className="text-3xl font-semibold text-slate-800">ChamberCounter</h1>
-				<p className="mt-2 text-slate-500">Scaffold ready. Build phases pending.</p>
-			</div>
+		<div className="flex h-screen flex-col bg-slate-50">
+			<header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+				<div className="flex items-baseline gap-2">
+					<h1 className="text-sm font-semibold text-slate-800">ChamberCounter</h1>
+					<span className="text-xs text-slate-400">vote modelling</span>
+				</div>
+				<div className="text-xs text-slate-500 tabular-nums">
+					{scenario ? `${scenario.councillors.length} / ${scenario.chamberSize} seated` : '—'}
+				</div>
+			</header>
+			<main className="flex min-h-0 flex-1">
+				<SetupPanel />
+				<section className="flex flex-1 items-center justify-center text-slate-400">
+					<div className="text-center">
+						<p className="text-sm">Chamber view — Phase 4.</p>
+						<p className="text-xs">Drag councillors to vote zones (Phase 5).</p>
+					</div>
+				</section>
+				<aside className="w-80 shrink-0 border-l border-slate-200 bg-white p-4 text-xs text-slate-400">
+					Tally panel — Phase 6.
+				</aside>
+			</main>
 		</div>
 	)
 }
