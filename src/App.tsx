@@ -31,7 +31,17 @@ export default function App() {
 
 	const [compact, setCompact] = useState(false)
 	const [exporting, setExporting] = useState(false)
+	const [drawer, setDrawer] = useState<'left' | 'right' | null>(null)
 	const captureRef = useRef<HTMLElement>(null)
+
+	useEffect(() => {
+		if (!drawer) return
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') setDrawer(null)
+		}
+		document.addEventListener('keydown', onKey)
+		return () => document.removeEventListener('keydown', onKey)
+	}, [drawer])
 
 	const exportPng = async () => {
 		if (!captureRef.current) return
@@ -88,12 +98,22 @@ export default function App() {
 
 	return (
 		<div className="flex h-screen flex-col bg-slate-50">
-			<header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
-				<div className="flex items-baseline gap-2">
-					<h1 className="text-sm font-semibold text-slate-800">ChamberCounter</h1>
-					<span className="text-xs text-slate-400">vote modelling</span>
+			<header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 lg:px-4">
+				<div className="flex min-w-0 items-center gap-2">
+					<button
+						type="button"
+						onClick={() => setDrawer('left')}
+						aria-label="Open setup"
+						className="rounded p-1 text-slate-600 hover:bg-slate-100 lg:hidden"
+					>
+						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+							<path d="M3 5h14M3 10h14M3 15h14" />
+						</svg>
+					</button>
+					<h1 className="truncate text-sm font-semibold text-slate-800">ChamberCounter</h1>
+					<span className="hidden text-xs text-slate-400 sm:inline">vote modelling</span>
 				</div>
-				<div className="flex items-center gap-3 print:hidden">
+				<div className="flex items-center gap-1.5 print:hidden sm:gap-3">
 					<div className="flex gap-1">
 						<button
 							type="button"
@@ -127,7 +147,7 @@ export default function App() {
 						onClick={() => setCompact(c => !c)}
 						title={compact ? 'Show side panels' : 'Hide side panels for screenshots'}
 						aria-pressed={compact}
-						className={`rounded border px-2 py-0.5 text-xs ${compact ? 'border-slate-700 bg-slate-700 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+						className={`hidden rounded border px-2 py-0.5 text-xs lg:inline-flex ${compact ? 'border-slate-700 bg-slate-700 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
 					>
 						{compact ? 'Exit compact' : 'Compact'}
 					</button>
@@ -136,7 +156,7 @@ export default function App() {
 						onClick={() => window.print()}
 						title="Print"
 						aria-label="Print"
-						className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-50"
+						className="hidden rounded border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-50 sm:inline-flex"
 					>
 						Print
 					</button>
@@ -150,17 +170,47 @@ export default function App() {
 					>
 						{exporting ? 'Exporting…' : 'PNG'}
 					</button>
-					<div className="text-xs text-slate-500 tabular-nums">
+					<button
+						type="button"
+						onClick={() => setDrawer('right')}
+						aria-label="Open tally"
+						className="rounded p-1 text-slate-600 hover:bg-slate-100 lg:hidden"
+					>
+						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+							<path d="M3 5h14M3 10h9M3 15h14" />
+						</svg>
+					</button>
+					<div className="hidden text-xs text-slate-500 tabular-nums sm:block">
 						{scenario ? `${scenario.councillors.length} / ${scenario.chamberSize} seated` : '—'}
 					</div>
 				</div>
 			</header>
-			<main className="flex min-h-0 flex-1">
-				{!compact && <SetupPanel />}
+			<main className="relative flex min-h-0 flex-1">
+				{drawer && (
+					<button
+						type="button"
+						onClick={() => setDrawer(null)}
+						aria-label="Close drawer"
+						className="fixed inset-0 z-20 bg-black/40 lg:hidden"
+					/>
+				)}
+				<div
+					className={`fixed inset-y-12 left-0 z-30 transform transition-transform duration-200 ease-out lg:static lg:inset-auto lg:translate-x-0 ${
+						drawer === 'left' ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+					} ${compact ? 'lg:hidden' : ''}`}
+				>
+					<SetupPanel onCloseMobile={() => setDrawer(null)} />
+				</div>
 				<section ref={captureRef} className="flex min-w-0 flex-1 flex-col bg-slate-50">
 					<Chamber />
 				</section>
-				{!compact && <TallyPanel />}
+				<div
+					className={`fixed inset-y-12 right-0 z-30 transform transition-transform duration-200 ease-out lg:static lg:inset-auto lg:translate-x-0 ${
+						drawer === 'right' ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+					} ${compact ? 'lg:hidden' : ''}`}
+				>
+					<TallyPanel onCloseMobile={() => setDrawer(null)} />
+				</div>
 			</main>
 		</div>
 	)

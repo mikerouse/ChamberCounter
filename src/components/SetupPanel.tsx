@@ -26,7 +26,11 @@ function hslToHex(hsl: string): string {
 	return `#${f(0)}${f(8)}${f(4)}`
 }
 
-export function SetupPanel() {
+type SetupPanelProps = {
+	onCloseMobile?: () => void
+}
+
+export function SetupPanel({ onCloseMobile }: SetupPanelProps = {}) {
 	const scenario = useChamberStore(selectCurrentScenario)
 	const renameScenario = useChamberStore(s => s.renameScenario)
 	const setChamberSize = useChamberStore(s => s.setChamberSize)
@@ -78,7 +82,19 @@ export function SetupPanel() {
 	if (!scenario) return null
 
 	return (
-		<aside className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white">
+		<aside className="flex h-[calc(100vh-3rem)] w-80 max-w-[85vw] shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white shadow-xl lg:h-full lg:max-w-none lg:shadow-none">
+			{onCloseMobile && (
+				<button
+					type="button"
+					onClick={onCloseMobile}
+					aria-label="Close setup"
+					className="absolute right-2 top-2 z-10 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+				>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+						<path d="M3 3l10 10M13 3L3 13" />
+					</svg>
+				</button>
+			)}
 			<ScenariosSidebar />
 			<div className="border-b border-slate-200 px-4 py-3">
 				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Scenario</h2>

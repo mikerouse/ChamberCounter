@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import {
 	DndContext,
 	KeyboardSensor,
-	PointerSensor,
+	MouseSensor,
+	TouchSensor,
 	useDroppable,
 	useSensor,
 	useSensors,
@@ -48,7 +49,8 @@ export function Chamber() {
 	const [menuTarget, setMenuTarget] = useState<ContextMenuTarget | null>(null)
 
 	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+		useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+		useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
 		useSensor(KeyboardSensor),
 	)
 
@@ -205,7 +207,7 @@ export function Chamber() {
 					)}
 				</HemicycleDropTarget>
 
-				<div className="grid h-44 shrink-0 grid-cols-4 gap-3">
+				<div className="grid h-44 shrink-0 grid-cols-2 gap-3 sm:grid-cols-4">
 					{VOTE_ORDER.map(vote => (
 						<VoteZone
 							key={vote}

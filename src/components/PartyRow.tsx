@@ -12,11 +12,13 @@ export function PartyRow({ scenarioId, party, count, remaining }: Props) {
 	const updateParty = useChamberStore(s => s.updateParty)
 	const setPartyCount = useChamberStore(s => s.setPartyCount)
 	const removeParty = useChamberStore(s => s.removeParty)
+	const setPartyVote = useChamberStore(s => s.setPartyVote)
 
 	const max = count + remaining
 
 	return (
-		<div className="flex items-center gap-2 py-1.5">
+		<div className="py-1.5">
+			<div className="flex items-center gap-2">
 			<label className="relative inline-block h-6 w-6 shrink-0 cursor-pointer rounded-full border border-slate-300 shadow-sm" style={{ backgroundColor: party.colour }} aria-label={`Colour for ${party.name}`}>
 				<input
 					type="color"
@@ -53,6 +55,39 @@ export function PartyRow({ scenarioId, party, count, remaining }: Props) {
 					<path d="M3 3l10 10M13 3L3 13" />
 				</svg>
 			</button>
+			</div>
+			{count > 0 && (
+				<div className="mt-1 grid grid-cols-4 gap-1 lg:hidden" aria-label={`Bulk vote for ${party.name}`}>
+					<button
+						type="button"
+						onClick={() => setPartyVote(scenarioId, party.id, 'aye')}
+						className="rounded bg-emerald-50 px-1 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
+					>
+						All Aye
+					</button>
+					<button
+						type="button"
+						onClick={() => setPartyVote(scenarioId, party.id, 'no')}
+						className="rounded bg-rose-50 px-1 py-0.5 text-[10px] font-semibold text-rose-700 hover:bg-rose-100"
+					>
+						All No
+					</button>
+					<button
+						type="button"
+						onClick={() => setPartyVote(scenarioId, party.id, 'abstain')}
+						className="rounded bg-amber-50 px-1 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-100"
+					>
+						Abstain
+					</button>
+					<button
+						type="button"
+						onClick={() => setPartyVote(scenarioId, party.id, 'absent')}
+						className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-200"
+					>
+						Absent
+					</button>
+				</div>
+			)}
 		</div>
 	)
 }

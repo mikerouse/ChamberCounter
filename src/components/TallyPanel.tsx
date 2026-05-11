@@ -20,7 +20,11 @@ const COUNT_BADGES: Array<{ key: VoteState; label: string; bg: string; text: str
 	{ key: 'absent', label: 'Absent', bg: 'bg-slate-100', text: 'text-slate-700' },
 ]
 
-export function TallyPanel() {
+type TallyPanelProps = {
+	onCloseMobile?: () => void
+}
+
+export function TallyPanel({ onCloseMobile }: TallyPanelProps = {}) {
 	const scenario = useChamberStore(selectCurrentScenario)
 	const toggleRule = useChamberStore(s => s.toggleRule)
 	const setMayorBreaksTies = useChamberStore(s => s.setMayorBreaksTies)
@@ -63,7 +67,19 @@ export function TallyPanel() {
 	const quorate = present >= quorum
 
 	return (
-		<aside className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-l border-slate-200 bg-white">
+		<aside className="flex h-[calc(100vh-3rem)] w-80 max-w-[85vw] shrink-0 flex-col overflow-y-auto border-l border-slate-200 bg-white shadow-xl lg:h-full lg:max-w-none lg:shadow-none">
+			{onCloseMobile && (
+				<button
+					type="button"
+					onClick={onCloseMobile}
+					aria-label="Close tally"
+					className="absolute right-2 top-2 z-10 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+				>
+					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+						<path d="M3 3l10 10M13 3L3 13" />
+					</svg>
+				</button>
+			)}
 			{!quorate && (
 				<div className="border-b border-rose-200 bg-rose-50 px-4 py-2 text-xs">
 					<p className="font-semibold uppercase tracking-wide text-rose-700">Not quorate</p>
