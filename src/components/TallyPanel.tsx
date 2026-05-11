@@ -1,0 +1,157 @@
+import { useMemo } from 'react'
+import { countByVote, evaluate } from '@/domain/threshold'
+import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
+import type { Party, VoteState } from '@/domain/types'
+import { ResultCard } from './ResultCard'
+
+type Row = {
+	party: Party
+	aye: number
+	no: number
+	abstain: number
+	absent: number
+	unassigned: number
+}
+
+const COUNT_BADGES: Array<{ key: VoteState; label: string; bg: string; text: string }> = [
+	{ key: 'aye', label: 'Aye', bg: 'bg-emerald-50', text: 'text-emerald-700' },
+	{ key: 'no', label: 'No', bg: 'bg-rose-50', text: 'text-rose-700' },
+	{ key: 'abstain', label: 'Abstain', bg: 'bg-amber-50', text: 'text-amber-700' },
+	{ key: 'absent', label: 'Absent', bg: 'bg-slate-100', text: 'text-slate-700' },
+]
+
+export function TallyPanel() {
+	const scenario = useChamberStore(selectCurrentScenario)
+	const toggleRule = useChamberStore(s => s.toggleRule)
+	const setMayorBreaksTies = useChamberStore(s => s.setMayorBreaksTies)
+
+	const counts = useMemo(() => (scenario ? countByVote(scenario.councillors) : null), [scenario])
+	const results = useMemo(() => (scenario ? evaluate(scenario) : []), [scenario])
+
+	const matrix = useMemo<Row[]>(() => {
+		if (!scenario) return []
+		return scenario.parties.map(party => {
+			const cs = scenario.councillors.filter(c => c.partyId === party.id)
+			return {
+				party,
+				aye: cs.filter(c => c.vote === 'aye').length,
+				no: cs.filter(c => c.vote === 'no').length,
+				abstain: cs.filter(c => c.vote === 'abstain').length,
+				absent: cs.filter(c => c.vote === 'absent').length,
+				unassigned: cs.filter(c => c.vote === 'unassigned').length,
+			}
+		})
+	}, [scenario])
+
+	if (!scenario || !counts) {
+		return <aside className="w-80 shrink-0 border-l border-slate-200 bg-white" />
+	}
+
+	const simpleRule = scenario.enabledRules.find(r => r.kind === 'simple-majority')
+	const simpleEnabled = !!simpleRule
+	const wholeEnabled = scenario.enabledRules.some(r => r.kind === 'whole-chamber-majority')
+	const mayorBreaksTies = simpleRule?.kind === 'simple-majority' ? simpleRule.mayorBreaksTies : false
+
+	return (
+		<aside className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-l border-slate-200 bg-white">
+			<div className="border-b border-slate-200 px-4 py-3">
+				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tally</h2>
+				<div className="mt-2 grid grid-cols-2 gap-2">
+					{COUNT_BADGES.map(b => (
+						<div key={b.key} className={`flex items-center justify-between rounded px-2 py-1.5 ${b.bg}`}>
+							<span className={`text-xs font-medium ${b.text}`}>{b.label}</span>
+							<span className={`text-sm font-semibold tabular-nums ${b.text}`}>{counts[b.key]}</span>
+						</div>
+					))}
+				</div>
+				{counts.unassigned > 0 && (
+					<p className="mt-2 text-xs text-slate-500">
+						Not yet voted: <span className="font-medium tabular-nums text-slate-700">{counts.unassigned}</span>
+					</p>
+				)}
+			</div>
+
+			{matrix.length > 0 && (
+				<div className="border-b border-slate-200 px-4 py-3">
+					<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">By party</h2>
+					<table className="mt-2 w-full text-xs">
+						<thead>
+							<tr className="text-slate-500">
+								<th className="text-left font-medium">Party</th>
+								<th className="w-7 text-right font-medium" title="Aye">A</th>
+								<th className="w-7 text-right font-medium" title="No">N</th>
+								<th className="w-7 text-right font-medium" title="Abstain">Ab</th>
+								<th className="w-7 text-right font-medium" title="Absent">Out</th>
+							</tr>
+						</thead>
+						<tbody>
+							{matrix.map(row => {
+								const partyTotal = row.aye + row.no + row.abstain + row.absent + row.unassigned
+								if (partyTotal === 0) return null
+								return (
+									<tr key={row.party.id} className="border-t border-slate-100">
+										<td className="py-1 pr-2">
+											<div className="flex items-center gap-1.5">
+												<span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: row.party.colour }} />
+												<span className="truncate text-slate-700">{row.party.name}</span>
+											</div>
+										</td>
+										<td className={`text-right tabular-nums ${row.aye > 0 ? 'text-emerald-700 font-medium' : 'text-slate-300'}`}>{row.aye}</td>
+										<td className={`text-right tabular-nums ${row.no > 0 ? 'text-rose-700 font-medium' : 'text-slate-300'}`}>{row.no}</td>
+										<td className={`text-right tabular-nums ${row.abstain > 0 ? 'text-amber-700 font-medium' : 'text-slate-300'}`}>{row.abstain}</td>
+										<td className={`text-right tabular-nums ${row.absent > 0 ? 'text-slate-600 font-medium' : 'text-slate-300'}`}>{row.absent}</td>
+									</tr>
+								)
+							})}
+						</tbody>
+					</table>
+				</div>
+			)}
+
+			<div className="flex flex-col gap-2 border-b border-slate-200 px-4 py-3">
+				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Results</h2>
+				{results.length === 0 && (
+					<p className="text-xs italic text-slate-400">No rules enabled.</p>
+				)}
+				{results.map((r, i) => (
+					<ResultCard key={`${r.rule.kind}-${i}`} result={r} />
+				))}
+			</div>
+
+			<div className="px-4 py-3">
+				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rules</h2>
+				<div className="mt-2 space-y-1.5 text-xs">
+					<label className="flex items-center gap-2">
+						<input
+							type="checkbox"
+							checked={simpleEnabled}
+							onChange={() => toggleRule(scenario.id, 'simple-majority')}
+							className="h-3.5 w-3.5"
+						/>
+						<span className="text-slate-700">Simple majority of voters</span>
+					</label>
+					{simpleEnabled && (
+						<label className="ml-5 flex items-center gap-2">
+							<input
+								type="checkbox"
+								checked={mayorBreaksTies}
+								onChange={e => setMayorBreaksTies(scenario.id, e.target.checked)}
+								className="h-3.5 w-3.5"
+							/>
+							<span className="text-slate-600">Mayor casts on tie</span>
+						</label>
+					)}
+					<label className="flex items-center gap-2">
+						<input
+							type="checkbox"
+							checked={wholeEnabled}
+							onChange={() => toggleRule(scenario.id, 'whole-chamber-majority')}
+							className="h-3.5 w-3.5"
+						/>
+						<span className="text-slate-700">Majority of whole chamber</span>
+					</label>
+				</div>
+			</div>
+		</aside>
+	)
+}

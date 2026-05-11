@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Chamber } from '@/components/Chamber'
 import { SetupPanel } from '@/components/SetupPanel'
+import { TallyPanel } from '@/components/TallyPanel'
 import { ensureSeedScenario, selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 
 export default function App() {
@@ -26,9 +27,7 @@ export default function App() {
 				<section className="flex min-w-0 flex-1 flex-col">
 					<Chamber />
 				</section>
-				<aside className="w-80 shrink-0 border-l border-slate-200 bg-white p-4 text-xs text-slate-400">
-					Tally panel — Phase 6.
-				</aside>
+				<TallyPanel />
 			</main>
 		</div>
 	)
