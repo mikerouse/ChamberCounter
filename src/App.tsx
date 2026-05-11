@@ -2,10 +2,24 @@ import { useEffect } from 'react'
 import { Chamber } from '@/components/Chamber'
 import { SetupPanel } from '@/components/SetupPanel'
 import { TallyPanel } from '@/components/TallyPanel'
+import { clearShareHash, readSharedScenarioFromHash } from '@/domain/share'
 import { ensureSeedScenario, selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 
 export default function App() {
 	const scenario = useChamberStore(selectCurrentScenario)
+
+	const importSharedScenario = useChamberStore(s => s.importSharedScenario)
+
+	useEffect(() => {
+		const shared = readSharedScenarioFromHash()
+		if (shared) {
+			const ok = window.confirm(`Import shared scenario "${shared.name}"?`)
+			if (ok) importSharedScenario(shared)
+			clearShareHash()
+		}
+		if (!useChamberStore.getState().currentScenarioId) ensureSeedScenario()
+		// Re-seed if scenario becomes null later (e.g. last one deleted)
+	}, [importSharedScenario])
 
 	useEffect(() => {
 		if (!scenario) ensureSeedScenario()

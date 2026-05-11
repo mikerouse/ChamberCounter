@@ -4,6 +4,7 @@ import { layoutHemicycle } from '@/domain/hemicycle'
 import { newCouncillor, newId, newParty, newScenario } from '@/domain/factory'
 import { UK_PARTY_PRESETS } from '@/domain/presets'
 import type { CastingVote, Councillor, Party, Scenario, ThresholdRuleKind, VoteState } from '@/domain/types'
+import type { SharePayload } from '@/domain/share'
 
 type ScenarioMap = Record<string, Scenario>
 
@@ -42,6 +43,9 @@ export type ChamberState = {
 
 	// Casting vote (Mayor's separate tie-breaker)
 	setCastingVote: (id: string, vote: CastingVote | null) => void
+
+	// Import a shared scenario from a URL payload
+	importSharedScenario: (payload: SharePayload) => string
 }
 
 function touch(scenario: Scenario): Scenario {
@@ -347,6 +351,33 @@ export const useChamberStore = create<ChamberState>()(
 						return { ...s, castingVote: vote }
 					}),
 				)
+			},
+
+			importSharedScenario: payload => {
+				const newScenarioId = newId('s')
+				const now = Date.now()
+				const partyIdMap = new Map<string, string>()
+				for (const p of payload.parties) partyIdMap.set(p.id, newId('p'))
+				const imported: Scenario = {
+					id: newScenarioId,
+					name: payload.name,
+					chamberSize: payload.chamberSize,
+					parties: payload.parties.map(p => ({ ...p, id: partyIdMap.get(p.id) ?? newId('p') })),
+					councillors: payload.councillors.map(c => ({
+						...c,
+						id: newId('c'),
+						partyId: partyIdMap.get(c.partyId) ?? c.partyId,
+					})),
+					enabledRules: payload.enabledRules,
+					castingVote: payload.castingVote,
+					createdAt: now,
+					updatedAt: now,
+				}
+				set(state => ({
+					scenarios: { ...state.scenarios, [newScenarioId]: imported },
+					currentScenarioId: newScenarioId,
+				}))
+				return newScenarioId
 			},
 		}),
 		{

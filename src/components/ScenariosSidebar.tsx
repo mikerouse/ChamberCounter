@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useChamberStore } from '@/store/useChamberStore'
+import { buildShareUrl } from '@/domain/share'
 import type { Scenario } from '@/domain/types'
 
 type RowProps = {
@@ -7,10 +8,11 @@ type RowProps = {
 	isCurrent: boolean
 	onSelect: () => void
 	onDuplicate: () => void
+	onShare: () => void
 	onDelete: () => void
 }
 
-function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onDelete }: RowProps) {
+function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onShare, onDelete }: RowProps) {
 	const [menuOpen, setMenuOpen] = useState(false)
 	const containerRef = useRef<HTMLDivElement>(null)
 
@@ -74,6 +76,17 @@ function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onDelete }: R
 						type="button"
 						role="menuitem"
 						onClick={() => {
+							onShare()
+							setMenuOpen(false)
+						}}
+						className="block w-full px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50"
+					>
+						Copy share link
+					</button>
+					<button
+						type="button"
+						role="menuitem"
+						onClick={() => {
 							onDelete()
 							setMenuOpen(false)
 						}}
@@ -109,6 +122,16 @@ export function ScenariosSidebar() {
 		}
 	}
 
+	const handleShare = async (scenario: Scenario) => {
+		const url = buildShareUrl(scenario)
+		try {
+			await navigator.clipboard.writeText(url)
+			window.alert(`Share link copied to clipboard.\n\nAnyone who opens it will be offered to import "${scenario.name}".`)
+		} catch {
+			window.prompt('Copy this share link:', url)
+		}
+	}
+
 	return (
 		<div className="border-b border-slate-200 px-4 py-3">
 			<div className="mb-2 flex items-center justify-between">
@@ -129,6 +152,7 @@ export function ScenariosSidebar() {
 						isCurrent={s.id === currentId}
 						onSelect={() => selectScenario(s.id)}
 						onDuplicate={() => duplicateScenario(s.id)}
+						onShare={() => handleShare(s)}
 						onDelete={() => handleDelete(s.id, s.name)}
 					/>
 				))}
