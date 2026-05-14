@@ -218,6 +218,70 @@ export function TallyPanel({ onCloseMobile }: TallyPanelProps = {}) {
 					)}
 				</div>
 			</div>
+
+			<div className="mt-auto border-t border-slate-200 px-4 py-3">
+				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Credits</h2>
+				<p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+					Built by{' '}
+					<a
+						href="https://www.mikerouse.co.uk/"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+					>
+						Mike Rouse
+					</a>
+					{' '}at{' '}
+					<a
+						href="https://www.bluetorch.co.uk/"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+					>
+						Bluetorch
+					</a>
+					, with{' '}
+					<a
+						href="https://www.anthropic.com/claude"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+					>
+						Claude
+					</a>
+					.
+				</p>
+				<p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+					Open source on{' '}
+					<a
+						href="https://github.com/mikerouse/ChamberCounter"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-500"
+					>
+						GitHub
+					</a>
+					{' '}— forks, issues and discussion welcome. If it's missing what your council needs, please open one.
+				</p>
+				<a
+					href="https://www.buymeacoffee.com/mikerouse"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="mt-2.5 inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900 ring-1 ring-amber-200 hover:bg-amber-200 hover:text-amber-950"
+				>
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<path d="M17 8h1a4 4 0 0 1 0 8h-1" />
+						<path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z" />
+						<line x1="6" y1="2" x2="6" y2="4" />
+						<line x1="10" y1="2" x2="10" y2="4" />
+						<line x1="14" y1="2" x2="14" y2="4" />
+					</svg>
+					Buy me a coffee
+				</a>
+				<p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+					Tips help keep small political tools like this free and ad-free.
+				</p>
+			</div>
 		</aside>
 	)
 }
