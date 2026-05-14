@@ -525,7 +525,7 @@ export const useChamberStore = create<ChamberState>()(
 				const now = Date.now()
 				const partyIdMap = new Map<string, string>()
 				for (const p of payload.parties) partyIdMap.set(p.id, newId('p'))
-				const imported: Scenario = {
+				const raw: Scenario = {
 					id: newScenarioId,
 					name: payload.name,
 					chamberSize: payload.chamberSize,
@@ -542,6 +542,9 @@ export const useChamberStore = create<ChamberState>()(
 					createdAt: now,
 					updatedAt: now,
 				}
+				// reassignSeats recomputes seat order from party order and centres any Mayor.
+				// The compact share format intentionally omits seatIndex.
+				const imported = reassignSeats(raw)
 				set(state => ({
 					scenarios: { ...state.scenarios, [newScenarioId]: imported },
 					scenarioOrder: [newScenarioId, ...state.scenarioOrder.filter(x => x !== newScenarioId)],
