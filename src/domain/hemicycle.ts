@@ -3,6 +3,7 @@ export type Seat = {
 	y: number
 	row: number
 	col: number
+	angle: number
 }
 
 export type HemicycleLayout = {
@@ -11,6 +12,11 @@ export type HemicycleLayout = {
 	width: number
 	height: number
 	rows: number[]
+	dotDiameter: number
+	centerX: number
+	centerY: number
+	innerRadius: number
+	outerRadius: number
 }
 
 export type LayoutOptions = {
@@ -22,8 +28,8 @@ export type LayoutOptions = {
 
 export function pickRowCount(n: number): number {
 	if (n <= 0) return 0
-	const ideal = Math.round(Math.sqrt(n / 3))
-	const clamped = Math.max(1, Math.min(10, ideal))
+	const ideal = Math.round(Math.sqrt(n / 2))
+	const clamped = Math.max(1, Math.min(12, ideal))
 	return Math.min(clamped, Math.max(1, Math.ceil(n / 3)))
 }
 
@@ -31,14 +37,12 @@ export function distributeSeats(n: number, rows: number, mayorRowMustBeOdd: bool
 	if (n <= 0 || rows <= 0) return []
 	if (rows === 1) return [n]
 
-	const rMin = 1
-	const rMax = rows
-	const radii: number[] = []
+	const weights: number[] = []
 	for (let i = 0; i < rows; i++) {
-		radii.push(rMin + (rMax - rMin) * (i / (rows - 1)))
+		weights.push(0.65 + 0.7 * (i / (rows - 1)))
 	}
-	const totalWeight = radii.reduce((s, r) => s + r, 0)
-	const counts = radii.map(r => Math.max(1, Math.round((n * r) / totalWeight)))
+	const totalWeight = weights.reduce((s, w) => s + w, 0)
+	const counts = weights.map(w => Math.max(1, Math.round((n * w) / totalWeight)))
 
 	const balance = (target: number, allowMayorRowChange: boolean) => {
 		while (counts.reduce((s, c) => s + c, 0) !== target) {
@@ -82,33 +86,55 @@ export function layoutHemicycle(opts: LayoutOptions): HemicycleLayout {
 	const { chamberSize: n, width, height, hasMayor } = opts
 
 	if (n <= 0) {
-		return { seats: [], mayorSeatIndex: null, width, height, rows: [] }
+		return {
+			seats: [],
+			mayorSeatIndex: null,
+			width,
+			height,
+			rows: [],
+			dotDiameter: 0,
+			centerX: width / 2,
+			centerY: height * 0.1,
+			innerRadius: 0,
+			outerRadius: 0,
+		}
 	}
 
 	const cx = width / 2
 	const cy = height * 0.1
-	const rMin = height * 0.22
-	const rMax = height * 0.86
-
 	const rowCount = pickRowCount(n)
 	const counts = distributeSeats(n, rowCount, hasMayor && n >= 1)
 
+	// Pack dots tightly. Solve for the largest dot diameter `d` such that:
+	//   rMin = counts[0] * d / π          (inner arc just fits innerCount dots)
+	//   rMax = rMin + (rowCount - 1) * d   (rows spaced one diameter apart)
+	//   cy + rMax + d/2 ≤ height           (outer dot fits vertically)
+	//   cx >= rMax + d/2                   (outer dot fits horizontally)
+	const innerCount = counts[0] ?? 1
+	const denom = innerCount / Math.PI + Math.max(0, rowCount - 1) + 0.5
+	const dVertical = (height - cy) / denom
+	const dHorizontal = (width / 2) / denom
+	const dCap = height * 0.16
+	const d = Math.max(8, Math.min(dCap, Math.min(dVertical, dHorizontal) * 0.94))
+
+	const rMin = rowCount === 1 ? (height - cy) / 2 : (innerCount * d) / Math.PI
+
 	const radii: number[] = []
 	if (rowCount === 1) {
-		radii.push((rMin + rMax) / 2)
+		radii.push(rMin)
 	} else {
 		for (let i = 0; i < rowCount; i++) {
-			radii.push(rMin + (rMax - rMin) * (i / (rowCount - 1)))
+			radii.push(rMin + i * d)
 		}
 	}
 
 	const seats: Seat[] = []
-	let mayorSeatIndex: number | null = null
-
 	for (let i = 0; i < rowCount; i++) {
 		const r = radii[i]
 		const s = counts[i]
-		const inset = s === 1 ? 0 : Math.PI / 36
+		// Angular inset so dots don't bunch right against the radial endpoints.
+		// Using d/(2r) puts the dot edge tangent to the perpendicular at the end of the half-circle.
+		const inset = s === 1 ? 0 : Math.min(Math.PI / 12, d / (2 * r))
 		const start = -Math.PI / 2 + inset
 		const end = Math.PI / 2 - inset
 		for (let j = 0; j < s; j++) {
@@ -116,12 +142,42 @@ export function layoutHemicycle(opts: LayoutOptions): HemicycleLayout {
 			const angle = start + t * (end - start)
 			const x = cx + r * Math.sin(angle)
 			const y = cy + r * Math.cos(angle)
-			seats.push({ x, y, row: i, col: j })
-			if (hasMayor && i === 0 && j === Math.floor(s / 2)) {
-				mayorSeatIndex = seats.length - 1
+			seats.push({ x, y, row: i, col: j, angle })
+		}
+	}
+
+	// Sort seats leftmost-to-rightmost by angle so that assigning councillors
+	// in party order produces a wedge per party (Conservative-then-Green-then-…),
+	// not a row-by-row horizontal stripe. Tiebreak by row inner-first.
+	seats.sort((a, b) => {
+		if (a.angle !== b.angle) return a.angle - b.angle
+		return a.row - b.row
+	})
+
+	let mayorSeatIndex: number | null = null
+	if (hasMayor) {
+		let bestDiff = Infinity
+		for (let i = 0; i < seats.length; i++) {
+			if (seats[i].row !== 0) continue
+			const diff = Math.abs(seats[i].angle)
+			if (diff < bestDiff) {
+				bestDiff = diff
+				mayorSeatIndex = i
 			}
 		}
 	}
 
-	return { seats, mayorSeatIndex, width, height, rows: counts }
+	const outerRowRadius = radii[radii.length - 1]
+	return {
+		seats,
+		mayorSeatIndex,
+		width,
+		height,
+		rows: counts,
+		dotDiameter: d,
+		centerX: cx,
+		centerY: cy,
+		innerRadius: rMin,
+		outerRadius: outerRowRadius + d / 2,
+	}
 }

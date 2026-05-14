@@ -13,12 +13,12 @@ describe('pickRowCount', () => {
 
 	it('scales up reasonably', () => {
 		expect(pickRowCount(10)).toBeGreaterThanOrEqual(2)
-		expect(pickRowCount(52)).toBeGreaterThanOrEqual(3)
-		expect(pickRowCount(200)).toBeLessThanOrEqual(10)
+		expect(pickRowCount(52)).toBeGreaterThanOrEqual(5)
+		expect(pickRowCount(200)).toBeLessThanOrEqual(12)
 	})
 
-	it('never exceeds 10', () => {
-		expect(pickRowCount(1000)).toBeLessThanOrEqual(10)
+	it('never exceeds 12', () => {
+		expect(pickRowCount(1000)).toBeLessThanOrEqual(12)
 	})
 })
 
@@ -86,17 +86,34 @@ describe('layoutHemicycle', () => {
 		expect(layout.mayorSeatIndex).toBeNull()
 	})
 
-	it('seats are deterministically ordered (row then col)', () => {
+	it('seats are sorted leftmost-to-rightmost by angle', () => {
 		const layout = layoutHemicycle({ chamberSize: 30, width: 800, height: 400, hasMayor: false })
 		for (let i = 1; i < layout.seats.length; i++) {
-			const prev = layout.seats[i - 1]
-			const cur = layout.seats[i]
-			if (cur.row === prev.row) {
-				expect(cur.col).toBe(prev.col + 1)
-			} else {
-				expect(cur.row).toBe(prev.row + 1)
-				expect(cur.col).toBe(0)
-			}
+			expect(layout.seats[i].angle).toBeGreaterThanOrEqual(layout.seats[i - 1].angle)
 		}
+	})
+
+	it('keeps every party councillor in a contiguous angular wedge', () => {
+		const layout = layoutHemicycle({ chamberSize: 57, width: 1000, height: 540, hasMayor: false })
+		// A councillor assigned sequentially to seats by party order should occupy
+		// a contiguous angular range. Simulate a party of 16 taking the first 16 seats.
+		const wedge = layout.seats.slice(0, 16)
+		const minAngle = Math.min(...wedge.map(s => s.angle))
+		const maxAngle = Math.max(...wedge.map(s => s.angle))
+		// No seat outside the wedge should fall inside (minAngle, maxAngle).
+		const outside = layout.seats.slice(16)
+		for (const s of outside) {
+			expect(s.angle).toBeGreaterThanOrEqual(maxAngle)
+		}
+		// And there is in fact some angular span (not degenerate).
+		expect(maxAngle).toBeGreaterThan(minAngle)
+	})
+
+	it('reports a dotDiameter that shrinks as the chamber grows denser', () => {
+		const small = layoutHemicycle({ chamberSize: 12, width: 1000, height: 540, hasMayor: false })
+		const large = layoutHemicycle({ chamberSize: 200, width: 1000, height: 540, hasMayor: false })
+		expect(small.dotDiameter).toBeGreaterThan(0)
+		expect(large.dotDiameter).toBeGreaterThan(0)
+		expect(small.dotDiameter).toBeGreaterThan(large.dotDiameter)
 	})
 })

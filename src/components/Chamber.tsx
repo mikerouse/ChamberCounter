@@ -14,6 +14,7 @@ import {
 import { buildDisplayNames } from '@/domain/display'
 import { layoutHemicycle } from '@/domain/hemicycle'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
+import { ayeLabel, noLabel } from '@/domain/types'
 import type { Councillor, Party, VoteState } from '@/domain/types'
 import { ContextMenu, type ContextMenuTarget } from './ContextMenu'
 import { Dot } from './Dot'
@@ -25,7 +26,7 @@ const VIEWBOX_H = 540
 
 const VOTE_ORDER: Array<Exclude<VoteState, 'unassigned'>> = ['aye', 'no', 'abstain', 'absent']
 
-function HemicycleDropTarget({ children }: { children: React.ReactNode }) {
+function HemicycleDropTarget({ dotPct, children }: { dotPct: number; children: React.ReactNode }) {
 	const { isOver, setNodeRef } = useDroppable({
 		id: 'zone-unassigned',
 		data: { vote: 'unassigned' satisfies VoteState },
@@ -34,7 +35,11 @@ function HemicycleDropTarget({ children }: { children: React.ReactNode }) {
 		<div
 			ref={setNodeRef}
 			className={`relative w-full ${isOver ? 'ring-2 ring-slate-400' : ''}`}
-			style={{ aspectRatio: `${VIEWBOX_W} / ${VIEWBOX_H}` }}
+			style={{
+				aspectRatio: `${VIEWBOX_W} / ${VIEWBOX_H}`,
+				containerType: 'inline-size',
+				['--dot-size' as string]: `max(14px, ${dotPct}cqw)`,
+			} as React.CSSProperties}
 		>
 			{children}
 		</div>
@@ -95,6 +100,11 @@ export function Chamber() {
 
 	if (!scenario || !layout) return null
 
+	const floorRadius = Math.min(
+		layout.outerRadius + layout.dotDiameter * 0.25,
+		VIEWBOX_H - layout.centerY - 2,
+	)
+
 	const councillorLabel = (id: string | number) => {
 		const c = scenario.councillors.find(x => x.id === String(id))
 		if (!c) return 'councillor'
@@ -102,8 +112,12 @@ export function Chamber() {
 		return c.isMayor ? `Mayor (${party?.name ?? 'unassigned'})` : `${party?.name ?? 'Unassigned'} councillor`
 	}
 
-	const zoneLabel = (vote: VoteState) =>
-		vote === 'unassigned' ? 'the chamber' : `the ${vote} zone`
+	const zoneLabel = (vote: VoteState) => {
+		if (vote === 'unassigned') return 'the chamber'
+		if (vote === 'aye') return `the ${ayeLabel(scenario)} zone`
+		if (vote === 'no') return `the ${noLabel(scenario)} zone`
+		return `the ${vote} zone`
+	}
 
 	const announcements: Announcements = {
 		onDragStart: ({ active }) => `Picked up ${councillorLabel(active.id)}.`,
@@ -175,7 +189,7 @@ export function Chamber() {
 							transition={{ duration: 0.18 }}
 							style={{ overflow: 'hidden' }}
 						>
-							<HemicycleDropTarget>
+							<HemicycleDropTarget dotPct={(layout.dotDiameter / VIEWBOX_W) * 100}>
 					<svg
 						viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
 						preserveAspectRatio="xMidYMid meet"
@@ -188,7 +202,7 @@ export function Chamber() {
 							</radialGradient>
 						</defs>
 						<path
-							d={`M ${VIEWBOX_W / 2 - VIEWBOX_H * 0.92} ${VIEWBOX_H * 0.1} A ${VIEWBOX_H * 0.92} ${VIEWBOX_H * 0.92} 0 0 0 ${VIEWBOX_W / 2 + VIEWBOX_H * 0.92} ${VIEWBOX_H * 0.1}`}
+							d={`M ${layout.centerX - floorRadius} ${layout.centerY} A ${floorRadius} ${floorRadius} 0 0 0 ${layout.centerX + floorRadius} ${layout.centerY}`}
 							fill="url(#chamberFloor)"
 							stroke="#cbd5e1"
 							strokeWidth={1}
@@ -247,11 +261,13 @@ export function Chamber() {
 										exit={{ opacity: 0 }}
 										transition={{ duration: 0.18 }}
 										aria-hidden
-										className="pointer-events-none absolute h-[22px] w-[22px] rounded-full border-2 border-white"
+										className="pointer-events-none absolute rounded-full border-2 border-white"
 										style={{
 											left: `${(seat.x / VIEWBOX_W) * 100}%`,
 											top: `${(seat.y / VIEWBOX_H) * 100}%`,
 											transform: 'translate(-50%, -50%)',
+											width: 'var(--dot-size, 22px)',
+											height: 'var(--dot-size, 22px)',
 											backgroundColor: party?.colour ?? '#94a3b8',
 										}}
 									/>
@@ -270,16 +286,27 @@ export function Chamber() {
 				</AnimatePresence>
 
 				<div className="grid grid-cols-2 gap-3 sm:h-44 sm:shrink-0 sm:grid-cols-4">
-					{VOTE_ORDER.map(vote => (
-						<VoteZone
-							key={vote}
-							vote={vote}
-							councillors={byVote[vote]}
-							partyById={partyById}
-							displayNames={displayNames}
-							onContextMenu={openContextMenu}
-						/>
-					))}
+					{VOTE_ORDER.map(vote => {
+						const label =
+							vote === 'aye'
+								? ayeLabel(scenario)
+								: vote === 'no'
+									? noLabel(scenario)
+									: vote === 'abstain'
+										? 'Abstain'
+										: 'Absent'
+						return (
+							<VoteZone
+								key={vote}
+								vote={vote}
+								councillors={byVote[vote]}
+								partyById={partyById}
+								displayNames={displayNames}
+								label={label}
+								onContextMenu={openContextMenu}
+							/>
+						)
+					})}
 				</div>
 				<div className="sticky bottom-0 -mx-3 mt-2 border-t border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur sm:-mx-4 sm:px-4 lg:static lg:mx-0 lg:mt-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
 					<ResultsStrip />
@@ -288,6 +315,8 @@ export function Chamber() {
 			{menuTarget && (
 				<ContextMenu
 					target={menuTarget}
+					ayeLabel={ayeLabel(scenario)}
+					noLabel={noLabel(scenario)}
 					onClose={() => setMenuTarget(null)}
 					onRename={(councillorId, name) => renameCouncillor(scenario.id, councillorId, name)}
 					onPartyVote={(partyId, vote) => setPartyVote(scenario.id, partyId, vote)}

@@ -23,9 +23,14 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 		? `translate(-50%, -50%) ${dragTransform}`.trim()
 		: dragTransform || undefined
 
+	const dotSize = inHemicycle ? 'var(--dot-size, 22px)' : '22px'
+
 	const style: React.CSSProperties = {
 		backgroundColor: party?.colour ?? '#94a3b8',
 		position: inHemicycle ? 'absolute' : 'relative',
+		width: dotSize,
+		height: dotSize,
+		fontSize: dotSize,
 		...(inHemicycle
 			? {
 					left: `${hemicycleX}%`,
@@ -64,7 +69,7 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 			layoutId={`dot-${councillor.id}`}
 			transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.7 }}
 			style={style}
-			className="h-[22px] w-[22px] rounded-full border-2 border-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+			className="rounded-full border-2 border-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
 			title={label}
 			aria-label={label}
 			onContextMenu={handleContextMenu}
@@ -76,12 +81,22 @@ export function Dot({ councillor, party, displayName, hemicycleX, hemicycleY, on
 				<>
 					<span
 						aria-hidden
-						className="pointer-events-none absolute -inset-[3px] rounded-full border-[2.5px] border-amber-400"
+						className="pointer-events-none absolute rounded-full border-amber-400"
+						style={{
+							inset: '-0.14em',
+							borderWidth: '0.115em',
+							borderStyle: 'solid',
+						}}
 					/>
 					<svg
 						aria-hidden
 						viewBox="0 0 14 8"
-						className="pointer-events-none absolute -top-[8px] left-1/2 h-[8px] w-[14px] -translate-x-1/2 drop-shadow-sm"
+						className="pointer-events-none absolute left-1/2 -translate-x-1/2 drop-shadow-sm"
+						style={{
+							top: '-0.36em',
+							width: '0.64em',
+							height: '0.36em',
+						}}
 					>
 						<path
 							d="M0 8 L0 4.5 L2 1 L4.5 5 L7 0 L9.5 5 L12 1 L14 4.5 L14 8 Z"
