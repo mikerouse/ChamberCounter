@@ -9,14 +9,18 @@ type RowProps = {
 	scenario: Scenario
 	isCurrent: boolean
 	onSelect: () => void
+	onRename: (name: string) => void
 	onDuplicate: () => void
 	onShare: () => void
 	onDelete: () => void
 }
 
-function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onShare, onDelete }: RowProps) {
+function ScenarioRow({ scenario, isCurrent, onSelect, onRename, onDuplicate, onShare, onDelete }: RowProps) {
 	const [menuOpen, setMenuOpen] = useState(false)
+	const [editing, setEditing] = useState(false)
+	const [draft, setDraft] = useState(scenario.name)
 	const containerRef = useRef<HTMLDivElement>(null)
+	const inputRef = useRef<HTMLInputElement>(null)
 	const dragControls = useDragControls()
 
 	useEffect(() => {
@@ -29,6 +33,27 @@ function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onShare, onDe
 		document.addEventListener('mousedown', handler)
 		return () => document.removeEventListener('mousedown', handler)
 	}, [menuOpen])
+
+	useEffect(() => {
+		if (!editing) return
+		setDraft(scenario.name)
+		// Focus + select once the input mounts
+		queueMicrotask(() => {
+			inputRef.current?.focus()
+			inputRef.current?.select()
+		})
+	}, [editing, scenario.name])
+
+	const commitRename = () => {
+		const next = draft.trim()
+		if (next && next !== scenario.name) onRename(next)
+		setEditing(false)
+	}
+
+	const cancelRename = () => {
+		setDraft(scenario.name)
+		setEditing(false)
+	}
 
 	return (
 		<Reorder.Item
@@ -54,15 +79,40 @@ function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onShare, onDe
 					<circle cx="6" cy="10" r="1" />
 				</svg>
 			</button>
-			<button
-				type="button"
-				onClick={onSelect}
-				className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left"
-				aria-current={isCurrent ? 'true' : undefined}
-			>
-				<span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isCurrent ? 'bg-slate-700' : 'bg-slate-300'}`} />
-				<span className="truncate text-sm text-slate-700">{scenario.name}</span>
-			</button>
+			{editing ? (
+				<div className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1">
+					<span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isCurrent ? 'bg-slate-700' : 'bg-slate-300'}`} />
+					<input
+						ref={inputRef}
+						type="text"
+						value={draft}
+						onChange={e => setDraft(e.target.value)}
+						onKeyDown={e => {
+							if (e.key === 'Enter') {
+								e.preventDefault()
+								commitRename()
+							} else if (e.key === 'Escape') {
+								e.preventDefault()
+								cancelRename()
+							}
+						}}
+						onBlur={commitRename}
+						aria-label={`Rename ${scenario.name}`}
+						className="min-w-0 flex-1 rounded border border-slate-300 bg-white px-1.5 py-0.5 text-sm focus:border-slate-500 focus:outline-none"
+					/>
+				</div>
+			) : (
+				<button
+					type="button"
+					onClick={onSelect}
+					onDoubleClick={() => setEditing(true)}
+					className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left"
+					aria-current={isCurrent ? 'true' : undefined}
+				>
+					<span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isCurrent ? 'bg-slate-700' : 'bg-slate-300'}`} />
+					<span className="truncate text-sm text-slate-700">{scenario.name}</span>
+				</button>
+			)}
 			<span className="shrink-0 pr-1 text-[10px] tabular-nums text-slate-400">{scenario.chamberSize}</span>
 			<button
 				type="button"
@@ -83,6 +133,17 @@ function ScenarioRow({ scenario, isCurrent, onSelect, onDuplicate, onShare, onDe
 					role="menu"
 					className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded border border-slate-200 bg-white shadow-md"
 				>
+					<button
+						type="button"
+						role="menuitem"
+						onClick={() => {
+							setMenuOpen(false)
+							setEditing(true)
+						}}
+						className="block w-full px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50"
+					>
+						Rename
+					</button>
 					<button
 						type="button"
 						role="menuitem"
@@ -129,6 +190,7 @@ export function ScenariosSidebar() {
 	const createScenario = useChamberStore(s => s.createScenario)
 	const applyUKPresets = useChamberStore(s => s.applyUKPresets)
 	const selectScenario = useChamberStore(s => s.selectScenario)
+	const renameScenario = useChamberStore(s => s.renameScenario)
 	const duplicateScenario = useChamberStore(s => s.duplicateScenario)
 	const deleteScenario = useChamberStore(s => s.deleteScenario)
 	const reorderScenarios = useChamberStore(s => s.reorderScenarios)
@@ -197,6 +259,7 @@ export function ScenariosSidebar() {
 						scenario={s}
 						isCurrent={s.id === currentId}
 						onSelect={() => selectScenario(s.id)}
+						onRename={name => renameScenario(s.id, name)}
 						onDuplicate={() => duplicateScenario(s.id)}
 						onShare={() => handleShare(s)}
 						onDelete={() => handleDelete(s.id, s.name)}
