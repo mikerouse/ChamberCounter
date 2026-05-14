@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" preserveAspectRatio="xMidYMid meet">
+	<defs>
+		<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+			<stop offset="0%" stop-color="#f8fafc"/>
+			<stop offset="100%" stop-color="#e2e8f0"/>
+		</linearGradient>
+		<radialGradient id="floor" cx="50%" cy="0%" r="100%">
+			<stop offset="0%" stop-color="#f1f5f9"/>
+			<stop offset="100%" stop-color="#cbd5e1"/>
+		</radialGradient>
+	</defs>
+	<rect width="1200" height="630" fill="url(#bg)"/>
+
+	<g transform="translate(400, 130)">
+		<path d="M -290 0 A 290 290 0 0 0 290 0" fill="url(#floor)" stroke="#94a3b8" stroke-width="1.5"/>
+		<rect x="-50" y="-44" width="100" height="34" rx="6" fill="#0f172a"/>
+		<text x="0" y="-20" text-anchor="middle" fill="white" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="15" font-weight="700" letter-spacing="2">CHAIR</text>
+
+		<!-- Inner row, r=110, 7 dots -->
+		<circle cx="-104.65" cy="34.00" r="24" fill="#ef4444"/>
+		<circle cx="-81.71" cy="73.62" r="24" fill="#ef4444"/>
+		<circle cx="-44.74" cy="100.50" r="24" fill="#f43f5e"/>
+		<circle cx="0" cy="110" r="24" fill="#f59e0b"/>
+		<circle cx="44.74" cy="100.50" r="24" fill="#3b82f6"/>
+		<circle cx="81.71" cy="73.62" r="24" fill="#3b82f6"/>
+		<circle cx="104.65" cy="34.00" r="24" fill="#1e40af"/>
+
+		<!-- Middle row, r=180, 11 dots -->
+		<circle cx="-173.85" cy="46.59" r="24" fill="#ef4444"/>
+		<circle cx="-155.88" cy="90.00" r="24" fill="#ef4444"/>
+		<circle cx="-127.28" cy="127.28" r="24" fill="#ef4444"/>
+		<circle cx="-90.00" cy="155.88" r="24" fill="#f43f5e"/>
+		<circle cx="-46.59" cy="173.85" r="24" fill="#f43f5e"/>
+		<circle cx="0" cy="180" r="24" fill="#10b981"/>
+		<circle cx="46.59" cy="173.85" r="24" fill="#3b82f6"/>
+		<circle cx="90.00" cy="155.88" r="24" fill="#3b82f6"/>
+		<circle cx="127.28" cy="127.28" r="24" fill="#3b82f6"/>
+		<circle cx="155.88" cy="90.00" r="24" fill="#3b82f6"/>
+		<circle cx="173.85" cy="46.59" r="24" fill="#1e40af"/>
+
+		<!-- Outer row, r=255, 15 dots -->
+		<circle cx="-250.16" cy="49.65" r="24" fill="#ef4444"/>
+		<circle cx="-235.59" cy="97.59" r="24" fill="#ef4444"/>
+		<circle cx="-211.97" cy="141.50" r="24" fill="#ef4444"/>
+		<circle cx="-180.31" cy="180.31" r="24" fill="#ef4444"/>
+		<circle cx="-141.74" cy="212.06" r="24" fill="#f43f5e"/>
+		<circle cx="-97.59" cy="235.59" r="24" fill="#f43f5e"/>
+		<circle cx="-49.74" cy="250.10" r="24" fill="#f43f5e"/>
+		<circle cx="0" cy="255" r="24" fill="#10b981"/>
+		<circle cx="49.74" cy="250.10" r="24" fill="#10b981"/>
+		<circle cx="97.59" cy="235.59" r="24" fill="#3b82f6"/>
+		<circle cx="141.74" cy="212.06" r="24" fill="#3b82f6"/>
+		<circle cx="180.31" cy="180.31" r="24" fill="#3b82f6"/>
+		<circle cx="211.97" cy="141.50" r="24" fill="#1e40af"/>
+		<circle cx="235.59" cy="97.59" r="24" fill="#1e40af"/>
+		<circle cx="250.16" cy="49.65" r="24" fill="#1e40af"/>
+	</g>
+
+	<g transform="translate(760, 240)">
+		<text x="0" y="0" fill="#0f172a" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="76" font-weight="800">ChamberCounter</text>
+		<text x="0" y="56" fill="#475569" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="30" font-weight="600">Will the numbers add up?</text>
+		<text x="0" y="116" fill="#64748b" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="22">Vote modelling for council whips</text>
+		<text x="0" y="144" fill="#64748b" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="22">and party managers.</text>
+		<text x="0" y="236" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" font-weight="600">mikerouse.github.io/ChamberCounter</text>
+	</g>
+</svg>
