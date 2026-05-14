@@ -29,6 +29,8 @@ export function encodeScenarioForShare(scenario: Scenario): string {
 		councillors: scenario.councillors,
 		enabledRules: scenario.enabledRules,
 		castingVote: scenario.castingVote,
+		quorum: scenario.quorum,
+		voteLabels: scenario.voteLabels,
 	}
 	return toBase64Url(JSON.stringify(payload))
 }

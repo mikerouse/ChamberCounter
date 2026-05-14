@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { evaluate } from '@/domain/threshold'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
+import { ayeLabel, noLabel } from '@/domain/types'
 import { ResultCard } from './ResultCard'
 
 export function ResultsStrip() {
@@ -10,6 +11,9 @@ export function ResultsStrip() {
 	const results = useMemo(() => (scenario ? evaluate(scenario) : []), [scenario])
 
 	if (!scenario || results.length === 0) return null
+
+	const aLabel = ayeLabel(scenario)
+	const nLabel = noLabel(scenario)
 
 	return (
 		<div
@@ -23,6 +27,8 @@ export function ResultsStrip() {
 					key={`${r.rule.kind}-${i}`}
 					result={r}
 					castingVote={scenario.castingVote}
+					ayeLabel={aLabel}
+					noLabel={nLabel}
 					onCast={vote => setCastingVote(scenario.id, vote)}
 				/>
 			))}

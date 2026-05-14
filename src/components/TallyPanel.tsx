@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { countByVote } from '@/domain/threshold'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
-import { effectiveQuorum, presentCount } from '@/domain/types'
+import { ayeLabel, effectiveQuorum, noLabel, presentCount } from '@/domain/types'
 import type { Party, VoteState } from '@/domain/types'
 
 type Row = {
@@ -13,12 +13,12 @@ type Row = {
 	unassigned: number
 }
 
-const COUNT_BADGES: Array<{ key: VoteState; label: string; bg: string; text: string }> = [
-	{ key: 'aye', label: 'Aye', bg: 'bg-emerald-50', text: 'text-emerald-700' },
-	{ key: 'no', label: 'No', bg: 'bg-rose-50', text: 'text-rose-700' },
-	{ key: 'abstain', label: 'Abstain', bg: 'bg-amber-50', text: 'text-amber-700' },
-	{ key: 'absent', label: 'Absent', bg: 'bg-slate-100', text: 'text-slate-700' },
-]
+const COUNT_BADGE_STYLE: Record<Exclude<VoteState, 'unassigned'>, { bg: string; text: string }> = {
+	aye: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+	no: { bg: 'bg-rose-50', text: 'text-rose-700' },
+	abstain: { bg: 'bg-amber-50', text: 'text-amber-700' },
+	absent: { bg: 'bg-slate-100', text: 'text-slate-700' },
+}
 
 type TallyPanelProps = {
 	onCloseMobile?: () => void
@@ -50,6 +50,15 @@ export function TallyPanel({ onCloseMobile }: TallyPanelProps = {}) {
 	if (!scenario || !counts) {
 		return <aside className="w-80 shrink-0 border-l border-slate-200 bg-white" />
 	}
+
+	const aLabel = ayeLabel(scenario)
+	const nLabel = noLabel(scenario)
+	const countBadges: Array<{ key: Exclude<VoteState, 'unassigned'>; label: string; bg: string; text: string }> = [
+		{ key: 'aye', label: aLabel, ...COUNT_BADGE_STYLE.aye },
+		{ key: 'no', label: nLabel, ...COUNT_BADGE_STYLE.no },
+		{ key: 'abstain', label: 'Abstain', ...COUNT_BADGE_STYLE.abstain },
+		{ key: 'absent', label: 'Absent', ...COUNT_BADGE_STYLE.absent },
+	]
 
 	const simpleRule = scenario.enabledRules.find(r => r.kind === 'simple-majority')
 	const simpleEnabled = !!simpleRule
@@ -95,7 +104,7 @@ export function TallyPanel({ onCloseMobile }: TallyPanelProps = {}) {
 			<div className="border-b border-slate-200 px-4 py-3">
 				<h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tally</h2>
 				<div className="mt-2 grid grid-cols-2 gap-2">
-					{COUNT_BADGES.map(b => (
+					{countBadges.map(b => (
 						<div key={b.key} className={`flex items-center justify-between rounded px-2 py-1.5 ${b.bg}`}>
 							<span className={`text-xs font-medium ${b.text}`}>{b.label}</span>
 							<span className={`text-sm font-semibold tabular-nums ${b.text}`}>{counts[b.key]}</span>
@@ -116,8 +125,8 @@ export function TallyPanel({ onCloseMobile }: TallyPanelProps = {}) {
 						<thead>
 							<tr className="text-slate-500">
 								<th className="text-left font-medium">Party</th>
-								<th className="w-7 text-right font-medium" title="Aye">A</th>
-								<th className="w-7 text-right font-medium" title="No">N</th>
+								<th className="w-7 text-right font-medium" title={aLabel}>A</th>
+								<th className="w-7 text-right font-medium" title={nLabel}>N</th>
 								<th className="w-7 text-right font-medium" title="Abstain">Ab</th>
 								<th className="w-7 text-right font-medium" title="Absent">Out</th>
 							</tr>

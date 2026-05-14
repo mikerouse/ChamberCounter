@@ -50,10 +50,12 @@ function ruleLabel(rule: RuleResult['rule']): string {
 type Props = {
 	result: RuleResult
 	castingVote?: CastVote
+	ayeLabel: string
+	noLabel: string
 	onCast?: (vote: CastVote | null) => void
 }
 
-export function ResultCard({ result, castingVote, onCast }: Props) {
+export function ResultCard({ result, castingVote, ayeLabel, noLabel, onCast }: Props) {
 	const style = OUTCOME_STYLE[result.outcome]
 	const label = ruleLabel(result.rule)
 	const isSimpleWithCasting = result.rule.kind === 'simple-majority' && result.rule.mayorBreaksTies
@@ -93,7 +95,7 @@ export function ResultCard({ result, castingVote, onCast }: Props) {
 									: 'bg-emerald-500 text-white hover:bg-emerald-600 focus-visible:ring-emerald-700'
 							}`}
 						>
-							{castingVote === 'aye' ? '✓ Cast Aye' : 'Cast Aye'}
+							{castingVote === 'aye' ? `✓ Cast ${ayeLabel}` : `Cast ${ayeLabel}`}
 						</button>
 						<button
 							type="button"
@@ -105,7 +107,7 @@ export function ResultCard({ result, castingVote, onCast }: Props) {
 									: 'bg-rose-500 text-white hover:bg-rose-600 focus-visible:ring-rose-700'
 							}`}
 						>
-							{castingVote === 'no' ? '✓ Cast No' : 'Cast No'}
+							{castingVote === 'no' ? `✓ Cast ${noLabel}` : `Cast ${noLabel}`}
 						</button>
 					</div>
 					{castingVote && (

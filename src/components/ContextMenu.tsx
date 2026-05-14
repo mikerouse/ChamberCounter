@@ -14,6 +14,8 @@ export type ContextMenuTarget = {
 
 type Props = {
 	target: ContextMenuTarget
+	ayeLabel: string
+	noLabel: string
 	onClose: () => void
 	onRename: (councillorId: string, newName: string) => void
 	onPartyVote: (partyId: string, vote: Exclude<VoteState, 'unassigned'>) => void
@@ -21,14 +23,14 @@ type Props = {
 	onApplyNotePreset: (councillorId: string, preset: NotePreset) => void
 }
 
-const PARTY_VOTES: Array<{ vote: Exclude<VoteState, 'unassigned'>; label: string; dot: string }> = [
-	{ vote: 'aye', label: 'votes Aye', dot: 'bg-emerald-500' },
-	{ vote: 'no', label: 'votes No', dot: 'bg-rose-500' },
-	{ vote: 'abstain', label: 'abstains', dot: 'bg-amber-500' },
-	{ vote: 'absent', label: 'is absent', dot: 'bg-slate-400' },
-]
+export function ContextMenu({ target, ayeLabel, noLabel, onClose, onRename, onPartyVote, onSetNote, onApplyNotePreset }: Props) {
+	const partyVotes: Array<{ vote: Exclude<VoteState, 'unassigned'>; label: string; dot: string }> = [
+		{ vote: 'aye', label: `votes ${ayeLabel}`, dot: 'bg-emerald-500' },
+		{ vote: 'no', label: `votes ${noLabel}`, dot: 'bg-rose-500' },
+		{ vote: 'abstain', label: 'abstains', dot: 'bg-amber-500' },
+		{ vote: 'absent', label: 'is absent', dot: 'bg-slate-400' },
+	]
 
-export function ContextMenu({ target, onClose, onRename, onPartyVote, onSetNote, onApplyNotePreset }: Props) {
 	const ref = useRef<HTMLDivElement>(null)
 	const [pos, setPos] = useState({ left: target.x, top: target.y })
 
@@ -160,7 +162,7 @@ export function ContextMenu({ target, onClose, onRename, onPartyVote, onSetNote,
 			<div className="border-t border-slate-100 px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
 				All {target.partyName}
 			</div>
-			{PARTY_VOTES.map(({ vote, label, dot }) => (
+			{partyVotes.map(({ vote, label, dot }) => (
 				<button
 					key={vote}
 					type="button"

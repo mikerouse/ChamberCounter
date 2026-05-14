@@ -1,3 +1,4 @@
+import { ayeLabel, noLabel } from './types'
 import type { Councillor, RuleResult, Scenario, ThresholdRule, VoteState } from './types'
 
 type VoteCounts = Record<Exclude<VoteState, never>, number>
@@ -14,6 +15,8 @@ export function findMayor(scenario: Scenario): Councillor | undefined {
 
 export function evaluateRule(rule: ThresholdRule, scenario: Scenario): RuleResult {
 	const counts = countByVote(scenario.councillors)
+	const aLabel = ayeLabel(scenario)
+	const nLabel = noLabel(scenario)
 	const base = {
 		rule,
 		ayes: counts.aye,
@@ -25,10 +28,10 @@ export function evaluateRule(rule: ThresholdRule, scenario: Scenario): RuleResul
 
 	if (rule.kind === 'simple-majority') {
 		if (counts.aye > counts.no) {
-			return { ...base, outcome: 'pass', explanation: `Ayes ${counts.aye} beat Noes ${counts.no}.` }
+			return { ...base, outcome: 'pass', explanation: `${aLabel} ${counts.aye} – ${nLabel} ${counts.no}. ${aLabel} wins.` }
 		}
 		if (counts.no > counts.aye) {
-			return { ...base, outcome: 'fail', explanation: `Noes ${counts.no} beat Ayes ${counts.aye}.` }
+			return { ...base, outcome: 'fail', explanation: `${nLabel} ${counts.no} – ${aLabel} ${counts.aye}. ${nLabel} wins.` }
 		}
 		// tied (ayes == noes)
 		if (!rule.mayorBreaksTies) {
@@ -44,7 +47,7 @@ export function evaluateRule(rule: ThresholdRule, scenario: Scenario): RuleResul
 				...base,
 				outcome: 'pass-by-casting',
 				mayorVote: 'aye',
-				explanation: `Tied ${counts.aye}–${counts.no}. Mayor's casting vote: AYE → passes ${counts.aye + 1}–${counts.no}.`,
+				explanation: `Tied ${counts.aye}–${counts.no}. Mayor's casting vote: ${aLabel.toUpperCase()} → ${aLabel} wins ${counts.aye + 1}–${counts.no}.`,
 			}
 		}
 		if (scenario.castingVote === 'no') {
@@ -52,7 +55,7 @@ export function evaluateRule(rule: ThresholdRule, scenario: Scenario): RuleResul
 				...base,
 				outcome: 'fail-by-casting',
 				mayorVote: 'no',
-				explanation: `Tied ${counts.aye}–${counts.no}. Mayor's casting vote: NO → fails ${counts.aye}–${counts.no + 1}.`,
+				explanation: `Tied ${counts.aye}–${counts.no}. Mayor's casting vote: ${nLabel.toUpperCase()} → ${nLabel} wins ${counts.aye}–${counts.no + 1}.`,
 			}
 		}
 		return {
@@ -65,18 +68,18 @@ export function evaluateRule(rule: ThresholdRule, scenario: Scenario): RuleResul
 	if (rule.kind === 'whole-chamber-majority') {
 		const needed = Math.floor(scenario.chamberSize / 2) + 1
 		if (counts.aye >= needed) {
-			return { ...base, outcome: 'pass', needed, explanation: `${counts.aye} ayes ≥ ${needed} required (majority of ${scenario.chamberSize}).` }
+			return { ...base, outcome: 'pass', needed, explanation: `${counts.aye} for ${aLabel} ≥ ${needed} required (majority of ${scenario.chamberSize}).` }
 		}
-		return { ...base, outcome: 'fail', needed, explanation: `${counts.aye} ayes < ${needed} required (majority of ${scenario.chamberSize}).` }
+		return { ...base, outcome: 'fail', needed, explanation: `${counts.aye} for ${aLabel} < ${needed} required (majority of ${scenario.chamberSize}).` }
 	}
 
 	// supermajority — fraction of the whole chamber
 	const needed = Math.ceil((rule.numerator * scenario.chamberSize) / rule.denominator)
 	const label = `${rule.numerator}/${rule.denominator} of ${scenario.chamberSize}`
 	if (counts.aye >= needed) {
-		return { ...base, outcome: 'pass', needed, explanation: `${counts.aye} ayes ≥ ${needed} required (${label}).` }
+		return { ...base, outcome: 'pass', needed, explanation: `${counts.aye} for ${aLabel} ≥ ${needed} required (${label}).` }
 	}
-	return { ...base, outcome: 'fail', needed, explanation: `${counts.aye} ayes < ${needed} required (${label}).` }
+	return { ...base, outcome: 'fail', needed, explanation: `${counts.aye} for ${aLabel} < ${needed} required (${label}).` }
 }
 
 export function evaluate(scenario: Scenario): RuleResult[] {

@@ -67,7 +67,6 @@ Everything happens in your browser. Your scenarios are saved to `localStorage` o
 ## Limitations
 
 - **No accounts, no sync** — by design. Your scenarios live in this browser, on this device.
-- **No dark mode yet** — light only in this release.
 - **Per-councillor names are local to the scenario.** Real council member lists aren't pre-loaded; you type names you care about, or leave the defaults.
 
 ## Feedback

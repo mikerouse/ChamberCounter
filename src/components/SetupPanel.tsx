@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Reorder, useDragControls } from 'motion/react'
 import { buildDisplayNames } from '@/domain/display'
-import { defaultQuorum } from '@/domain/types'
+import { ayeLabel, defaultQuorum, DEFAULT_VOTE_LABELS, noLabel } from '@/domain/types'
 import type { Party } from '@/domain/types'
 import { selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { Combobox } from './Combobox'
@@ -75,6 +75,7 @@ export function SetupPanel({ onCloseMobile }: SetupPanelProps = {}) {
 	const resetVotes = useChamberStore(s => s.resetVotes)
 	const setQuorum = useChamberStore(s => s.setQuorum)
 	const reorderParties = useChamberStore(s => s.reorderParties)
+	const setVoteLabels = useChamberStore(s => s.setVoteLabels)
 
 	const counts = useMemo(() => {
 		if (!scenario) return new Map<string, number>()
@@ -176,6 +177,47 @@ export function SetupPanel({ onCloseMobile }: SetupPanelProps = {}) {
 						Default: {defaultQuorum(scenario.chamberSize)} (one quarter of {scenario.chamberSize})
 					</span>
 				</label>
+				<fieldset className="mt-3">
+					<legend className="flex items-baseline justify-between text-xs font-medium text-slate-600">
+						<span>Vote labels</span>
+						{scenario.voteLabels && (
+							<button
+								type="button"
+								onClick={() => setVoteLabels(scenario.id, null)}
+								className="text-[10px] font-normal text-slate-400 underline-offset-2 hover:underline"
+							>
+								reset to Aye / No
+							</button>
+						)}
+					</legend>
+					<div className="mt-1 grid grid-cols-2 gap-2">
+						<label className="block">
+							<span className="text-[10px] uppercase tracking-wide text-emerald-700">For</span>
+							<input
+								type="text"
+								value={ayeLabel(scenario)}
+								onChange={e => setVoteLabels(scenario.id, { aye: e.target.value })}
+								placeholder={DEFAULT_VOTE_LABELS.aye}
+								aria-label="Aye-side label"
+								className="mt-0.5 w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm focus:border-emerald-400 focus:outline-none"
+							/>
+						</label>
+						<label className="block">
+							<span className="text-[10px] uppercase tracking-wide text-rose-700">Against</span>
+							<input
+								type="text"
+								value={noLabel(scenario)}
+								onChange={e => setVoteLabels(scenario.id, { no: e.target.value })}
+								placeholder={DEFAULT_VOTE_LABELS.no}
+								aria-label="No-side label"
+								className="mt-0.5 w-full rounded border border-slate-200 bg-white px-2 py-1 text-sm focus:border-rose-400 focus:outline-none"
+							/>
+						</label>
+					</div>
+					<p className="mt-1 text-[10px] text-slate-400">
+						Customise for leadership ballots (e.g. candidate names).
+					</p>
+				</fieldset>
 			</div>
 
 			<div className="border-b border-slate-200 px-4 py-3">

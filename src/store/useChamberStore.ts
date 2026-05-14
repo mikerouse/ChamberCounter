@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { layoutHemicycle } from '@/domain/hemicycle'
 import { newCouncillor, newId, newParty, newScenario } from '@/domain/factory'
 import { UK_PARTY_PRESETS } from '@/domain/presets'
-import type { CastingVote, Councillor, Party, Scenario, ThresholdRuleKind, VoteState } from '@/domain/types'
+import type { CastingVote, Councillor, Party, Scenario, ThresholdRuleKind, VoteLabels, VoteState } from '@/domain/types'
 import type { SharePayload } from '@/domain/share'
 
 type ScenarioMap = Record<string, Scenario>
@@ -62,6 +62,9 @@ export type ChamberState = {
 
 	// Quorum (override of the chamber-size-based default)
 	setQuorum: (id: string, value: number | null) => void
+
+	// Custom labels for the Aye/No votes (defaults to "Aye"/"No")
+	setVoteLabels: (id: string, labels: Partial<VoteLabels> | null) => void
 
 	// Import a shared scenario from a URL payload
 	importSharedScenario: (payload: SharePayload) => string
@@ -500,6 +503,23 @@ export const useChamberStore = create<ChamberState>()(
 				)
 			},
 
+			setVoteLabels: (id, labels) => {
+				set(state =>
+					withScenarioUpdate(state, id, s => {
+						if (labels === null) {
+							const { voteLabels: _drop, ...rest } = s
+							void _drop
+							return rest
+						}
+						const next = {
+							aye: labels.aye ?? s.voteLabels?.aye ?? 'Aye',
+							no: labels.no ?? s.voteLabels?.no ?? 'No',
+						}
+						return { ...s, voteLabels: next }
+					}),
+				)
+			},
+
 			importSharedScenario: payload => {
 				const newScenarioId = newId('s')
 				const now = Date.now()
@@ -517,6 +537,8 @@ export const useChamberStore = create<ChamberState>()(
 					})),
 					enabledRules: payload.enabledRules,
 					castingVote: payload.castingVote,
+					quorum: payload.quorum,
+					voteLabels: payload.voteLabels,
 					createdAt: now,
 					updatedAt: now,
 				}

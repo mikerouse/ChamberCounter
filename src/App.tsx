@@ -91,9 +91,9 @@ export default function App() {
 	useEffect(() => {
 		const shared = readSharedScenarioFromHash()
 		if (shared) {
-			const ok = window.confirm(`Import shared scenario "${shared.name}"?`)
-			if (ok) importSharedScenario(shared)
+			importSharedScenario(shared)
 			clearShareHash()
+			toast(`Imported "${shared.name}"`, 'success')
 		}
 		if (!useChamberStore.getState().currentScenarioId) ensureSeedScenario()
 		// Re-seed if scenario becomes null later (e.g. last one deleted)

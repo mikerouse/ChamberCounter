@@ -25,6 +25,13 @@ export type ThresholdRuleKind = ThresholdRule['kind']
 
 export type CastingVote = 'aye' | 'no'
 
+export type VoteLabels = {
+	aye: string
+	no: string
+}
+
+export const DEFAULT_VOTE_LABELS: VoteLabels = { aye: 'Aye', no: 'No' }
+
 export type Scenario = {
 	id: string
 	name: string
@@ -34,8 +41,17 @@ export type Scenario = {
 	enabledRules: ThresholdRule[]
 	castingVote?: CastingVote
 	quorum?: number
+	voteLabels?: VoteLabels
 	createdAt: number
 	updatedAt: number
+}
+
+export function ayeLabel(scenario: Pick<Scenario, 'voteLabels'>): string {
+	return scenario.voteLabels?.aye?.trim() || DEFAULT_VOTE_LABELS.aye
+}
+
+export function noLabel(scenario: Pick<Scenario, 'voteLabels'>): string {
+	return scenario.voteLabels?.no?.trim() || DEFAULT_VOTE_LABELS.no
 }
 
 /** UK Local Government Act 1972 sch 12 para 39: quorum is one quarter of the whole council. */
