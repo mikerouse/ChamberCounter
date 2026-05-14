@@ -118,8 +118,8 @@ export default function App() {
 							<path d="M3 5h14M3 10h14M3 15h14" />
 						</svg>
 					</button>
-					<h1 className="truncate text-sm font-semibold text-slate-800">ChamberCounter</h1>
-					<span className="hidden text-xs text-slate-400 sm:inline">vote modelling</span>
+					<h1 className="truncate text-sm font-semibold text-slate-800">Council Chamber Counter</h1>
+					<span className="hidden text-xs text-slate-400 sm:inline">vote modelling for council whips</span>
 				</div>
 				<div className="flex items-center gap-1.5 print:hidden sm:gap-3">
 					<div className="flex gap-1">
