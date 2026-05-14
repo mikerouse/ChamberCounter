@@ -5,7 +5,7 @@ import { MobileTallyPill } from '@/components/MobileTallyPill'
 import { SetupPanel } from '@/components/SetupPanel'
 import { TallyPanel } from '@/components/TallyPanel'
 import { Toasts } from '@/components/Toasts'
-import { clearShareHash, readSharedScenarioFromHash } from '@/domain/share'
+import { clearShareHash, readSharedFromHash } from '@/domain/share'
 import { useFocusTrap } from '@/hooks/useFocusTrap'
 import { ensureSeedScenario, selectCurrentScenario, useChamberStore } from '@/store/useChamberStore'
 import { toast } from '@/store/toasts'
@@ -21,6 +21,7 @@ export default function App() {
 	const scenario = useChamberStore(selectCurrentScenario)
 
 	const importSharedScenario = useChamberStore(s => s.importSharedScenario)
+	const importSharedScenarios = useChamberStore(s => s.importSharedScenarios)
 	const undo = useChamberStore(s => s.undo)
 	const redo = useChamberStore(s => s.redo)
 
@@ -89,15 +90,20 @@ export default function App() {
 	}, [undo, redo])
 
 	useEffect(() => {
-		const shared = readSharedScenarioFromHash()
+		const shared = readSharedFromHash()
 		if (shared) {
-			importSharedScenario(shared)
+			if (shared.kind === 'single') {
+				importSharedScenario(shared.payload)
+				toast(`Imported "${shared.payload.name}"`, 'success')
+			} else {
+				const ids = importSharedScenarios(shared.payloads)
+				toast(`Imported ${ids.length} scenarios`, 'success')
+			}
 			clearShareHash()
-			toast(`Imported "${shared.name}"`, 'success')
 		}
 		if (!useChamberStore.getState().currentScenarioId) ensureSeedScenario()
 		// Re-seed if scenario becomes null later (e.g. last one deleted)
-	}, [importSharedScenario])
+	}, [importSharedScenario, importSharedScenarios])
 
 	useEffect(() => {
 		if (!scenario) ensureSeedScenario()

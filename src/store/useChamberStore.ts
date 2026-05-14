@@ -68,10 +68,40 @@ export type ChamberState = {
 
 	// Import a shared scenario from a URL payload
 	importSharedScenario: (payload: SharePayload) => string
+
+	// Import a bundle of shared scenarios from one URL payload (`#sg=…`)
+	importSharedScenarios: (payloads: SharePayload[]) => string[]
 }
 
 function touch(scenario: Scenario): Scenario {
 	return { ...scenario, updatedAt: Date.now() }
+}
+
+function buildScenarioFromPayload(payload: SharePayload): Scenario {
+	const newScenarioId = newId('s')
+	const now = Date.now()
+	const partyIdMap = new Map<string, string>()
+	for (const p of payload.parties) partyIdMap.set(p.id, newId('p'))
+	const raw: Scenario = {
+		id: newScenarioId,
+		name: payload.name,
+		chamberSize: payload.chamberSize,
+		parties: payload.parties.map(p => ({ ...p, id: partyIdMap.get(p.id) ?? newId('p') })),
+		councillors: payload.councillors.map(c => ({
+			...c,
+			id: newId('c'),
+			partyId: partyIdMap.get(c.partyId) ?? c.partyId,
+		})),
+		enabledRules: payload.enabledRules,
+		castingVote: payload.castingVote,
+		quorum: payload.quorum,
+		voteLabels: payload.voteLabels,
+		createdAt: now,
+		updatedAt: now,
+	}
+	// The compact share format omits seatIndex; reassignSeats recomputes
+	// seat order from party order and centres any Mayor.
+	return reassignSeats(raw)
 }
 
 function reassignSeats(scenario: Scenario): Scenario {
@@ -521,36 +551,29 @@ export const useChamberStore = create<ChamberState>()(
 			},
 
 			importSharedScenario: payload => {
-				const newScenarioId = newId('s')
-				const now = Date.now()
-				const partyIdMap = new Map<string, string>()
-				for (const p of payload.parties) partyIdMap.set(p.id, newId('p'))
-				const raw: Scenario = {
-					id: newScenarioId,
-					name: payload.name,
-					chamberSize: payload.chamberSize,
-					parties: payload.parties.map(p => ({ ...p, id: partyIdMap.get(p.id) ?? newId('p') })),
-					councillors: payload.councillors.map(c => ({
-						...c,
-						id: newId('c'),
-						partyId: partyIdMap.get(c.partyId) ?? c.partyId,
-					})),
-					enabledRules: payload.enabledRules,
-					castingVote: payload.castingVote,
-					quorum: payload.quorum,
-					voteLabels: payload.voteLabels,
-					createdAt: now,
-					updatedAt: now,
-				}
-				// reassignSeats recomputes seat order from party order and centres any Mayor.
-				// The compact share format intentionally omits seatIndex.
-				const imported = reassignSeats(raw)
+				const imported = buildScenarioFromPayload(payload)
 				set(state => ({
-					scenarios: { ...state.scenarios, [newScenarioId]: imported },
-					scenarioOrder: [newScenarioId, ...state.scenarioOrder.filter(x => x !== newScenarioId)],
-					currentScenarioId: newScenarioId,
+					scenarios: { ...state.scenarios, [imported.id]: imported },
+					scenarioOrder: [imported.id, ...state.scenarioOrder.filter(x => x !== imported.id)],
+					currentScenarioId: imported.id,
 				}))
-				return newScenarioId
+				return imported.id
+			},
+
+			importSharedScenarios: payloads => {
+				if (payloads.length === 0) return []
+				const built = payloads.map(buildScenarioFromPayload)
+				const ids = built.map(s => s.id)
+				set(state => {
+					const nextScenarios = { ...state.scenarios }
+					for (const s of built) nextScenarios[s.id] = s
+					return {
+						scenarios: nextScenarios,
+						scenarioOrder: [...ids, ...state.scenarioOrder.filter(x => !ids.includes(x))],
+						currentScenarioId: ids[0],
+					}
+				})
+				return ids
 			},
 		}),
 		{

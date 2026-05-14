@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Reorder, useDragControls } from 'motion/react'
 import { useChamberStore } from '@/store/useChamberStore'
-import { buildShareUrl } from '@/domain/share'
+import { buildGroupShareUrl, buildShareUrl } from '@/domain/share'
 import { toast } from '@/store/toasts'
 import type { Scenario } from '@/domain/types'
 
@@ -210,13 +210,7 @@ export function ScenariosSidebar() {
 		}
 	}
 
-	const handleShare = async (scenario: Scenario) => {
-		const url = buildShareUrl(scenario)
-		const shareData = {
-			title: `ChamberCounter — ${scenario.name}`,
-			text: `Vote scenario: ${scenario.name}`,
-			url,
-		}
+	const offerShare = async (url: string, shareData: ShareData, successToast: string) => {
 		if (typeof navigator.share === 'function' && navigator.canShare?.(shareData) !== false) {
 			try {
 				await navigator.share(shareData)
@@ -228,10 +222,37 @@ export function ScenariosSidebar() {
 		}
 		try {
 			await navigator.clipboard.writeText(url)
-			toast(`Share link copied — anyone who opens it can import "${scenario.name}".`, 'success')
+			toast(successToast, 'success')
 		} catch {
 			window.prompt('Copy this share link:', url)
 		}
+	}
+
+	const handleShare = (scenario: Scenario) => {
+		const url = buildShareUrl(scenario)
+		return offerShare(
+			url,
+			{
+				title: `ChamberCounter — ${scenario.name}`,
+				text: `Vote scenario: ${scenario.name}`,
+				url,
+			},
+			`Share link copied — anyone who opens it can import "${scenario.name}".`,
+		)
+	}
+
+	const handleShareAll = () => {
+		if (list.length === 0) return
+		const url = buildGroupShareUrl(list)
+		return offerShare(
+			url,
+			{
+				title: `ChamberCounter — ${list.length} scenarios`,
+				text: `${list.length} ChamberCounter scenarios`,
+				url,
+			},
+			`Share link copied — opening it imports all ${list.length} scenarios.`,
+		)
 	}
 
 	return (
@@ -269,6 +290,15 @@ export function ScenariosSidebar() {
 					<p className="py-2 text-xs italic text-slate-400">No scenarios yet.</p>
 				)}
 			</Reorder.Group>
+			{list.length >= 2 && (
+				<button
+					type="button"
+					onClick={handleShareAll}
+					className="mt-2 w-full rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+				>
+					Share all {list.length} as one link
+				</button>
+			)}
 		</div>
 	)
 }

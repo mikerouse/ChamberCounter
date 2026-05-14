@@ -10,6 +10,7 @@ import type {
 } from './types'
 
 const SHARE_HASH_PREFIX = 's='
+const SHARE_GROUP_HASH_PREFIX = 'sg='
 
 type SharePayload = Omit<Scenario, 'id' | 'createdAt' | 'updatedAt'>
 
@@ -164,17 +165,58 @@ export function decodeSharedScenario(encoded: string): SharePayload | null {
 	}
 }
 
+export function encodeScenariosForShare(scenarios: Scenario[]): string {
+	const arr = scenarios.map(toCompact)
+	return LZString.compressToEncodedURIComponent(JSON.stringify(arr))
+}
+
+export function decodeSharedScenarioGroup(encoded: string): SharePayload[] | null {
+	try {
+		const json = LZString.decompressFromEncodedURIComponent(encoded)
+		if (!json) return null
+		const arr = JSON.parse(json)
+		if (!Array.isArray(arr)) return null
+		const out: SharePayload[] = []
+		for (const raw of arr) {
+			const p = fromCompact(raw)
+			if (p) out.push(p)
+		}
+		return out.length > 0 ? out : null
+	} catch {
+		return null
+	}
+}
+
 export function buildShareUrl(scenario: Scenario): string {
 	const url = new URL(window.location.href)
 	url.hash = `${SHARE_HASH_PREFIX}${encodeScenarioForShare(scenario)}`
 	return url.toString()
 }
 
-export function readSharedScenarioFromHash(): SharePayload | null {
+export function buildGroupShareUrl(scenarios: Scenario[]): string {
+	const url = new URL(window.location.href)
+	url.hash = `${SHARE_GROUP_HASH_PREFIX}${encodeScenariosForShare(scenarios)}`
+	return url.toString()
+}
+
+export type SharedFromHash =
+	| { kind: 'single'; payload: SharePayload }
+	| { kind: 'group'; payloads: SharePayload[] }
+	| null
+
+export function readSharedFromHash(): SharedFromHash {
 	const hash = window.location.hash
-	if (!hash.startsWith(`#${SHARE_HASH_PREFIX}`)) return null
-	const encoded = hash.slice(`#${SHARE_HASH_PREFIX}`.length)
-	return decodeSharedScenario(encoded)
+	if (hash.startsWith(`#${SHARE_GROUP_HASH_PREFIX}`)) {
+		const encoded = hash.slice(`#${SHARE_GROUP_HASH_PREFIX}`.length)
+		const arr = decodeSharedScenarioGroup(encoded)
+		return arr ? { kind: 'group', payloads: arr } : null
+	}
+	if (hash.startsWith(`#${SHARE_HASH_PREFIX}`)) {
+		const encoded = hash.slice(`#${SHARE_HASH_PREFIX}`.length)
+		const p = decodeSharedScenario(encoded)
+		return p ? { kind: 'single', payload: p } : null
+	}
+	return null
 }
 
 export function clearShareHash(): void {
